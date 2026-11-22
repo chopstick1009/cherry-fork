@@ -3239,7 +3239,7 @@ describe('AgentRightPane', () => {
     rerender(pane())
     expect(fileSessionFlushMock).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+    await user.click(screen.getByRole('button', { name: 'navbar.hide_sidebar' }))
 
     expect(fileSessionFlushMock).toHaveBeenCalledTimes(1)
   })
@@ -3733,7 +3733,7 @@ describe('AgentRightPane', () => {
     expect(screen.getByText('webview.annotation.empty_description')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /webview.annotation.import_followups/ })).toBeDisabled()
 
-    await user.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+    await user.click(screen.getByRole('button', { name: 'navbar.hide_sidebar' }))
 
     expect(screen.getByTestId('right-pane')).toHaveAttribute('data-open', 'false')
   })

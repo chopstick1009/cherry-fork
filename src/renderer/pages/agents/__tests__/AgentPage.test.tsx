@@ -2582,6 +2582,27 @@ describe('AgentPage', () => {
     expect(tabVisuals).not.toHaveProperty('icon')
   })
 
+  it('preserves the existing tab title until the route agent finishes loading', () => {
+    agentPageMocks.routeSearch = { agentId: 'agent-b' }
+    agentPageMocks.tabUrl = '/app/agents?agentId=agent-b'
+    agentPageMocks.agents = []
+    agentPageMocks.agentsLoading = true
+
+    const { rerender } = render(<AgentPage />)
+
+    expect(vi.mocked(useTabSelfVisuals).mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ preserveVisuals: true })
+    )
+
+    agentPageMocks.agents = [{ id: 'agent-b', model: 'model-b', name: 'Agent B' }]
+    agentPageMocks.agentsLoading = false
+    rerender(<AgentPage />)
+
+    expect(vi.mocked(useTabSelfVisuals).mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ preserveVisuals: false, title: 'Agent B' })
+    )
+  })
+
   it('creates and activates a conversation for an agentId entry with no session yet', async () => {
     agentPageMocks.routeSearch = {}
     agentPageMocks.agents = [

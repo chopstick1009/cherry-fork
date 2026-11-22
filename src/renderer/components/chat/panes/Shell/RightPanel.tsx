@@ -1,10 +1,11 @@
-import { Maximize2, Minimize2, Notebook } from 'lucide-react'
+import { Maximize2, Minimize2 } from 'lucide-react'
 import type { ComponentProps, ComponentType, MouseEvent, ReactNode } from 'react'
 import { Activity, createContext, use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Tooltip, TooltipSurface } from '@cherrystudio/ui'
 import { ErrorBoundary } from '@renderer/components/ErrorBoundary'
+import { RightSidebarCollapseIcon } from '@renderer/components/icons/SidebarToggleIcons'
 import NavbarIcon from '@renderer/components/NavbarIcon'
 import { useCommandHandler } from '@renderer/hooks/command'
 import { useIsActiveTab } from '@renderer/hooks/tab'
@@ -441,7 +442,7 @@ export function RightPanelHeaderControls({ canMaximize = false }: { canMaximize?
   const { t } = useTranslation()
   const maximizeLabel = t(state.presentationMaximized ? 'common.minimize' : 'common.maximize')
   const MaximizeIcon = state.presentationMaximized ? Minimize2 : Maximize2
-  const closeLabel = t('common.close_sidebar')
+  const closeLabel = t('navbar.hide_sidebar')
 
   const maximizeButton =
     canMaximize || state.presentationMaximized ? (
@@ -460,14 +461,9 @@ export function RightPanelHeaderControls({ canMaximize = false }: { canMaximize?
   return (
     <div className="flex shrink-0 items-center gap-0.5 [-webkit-app-region:no-drag]">
       {maximizeButton}
-      {/* Closing hides the pane subtree via Activity (display:none), which zeroes the
-          trigger's rect; Radix then parks the still-exiting tooltip at the viewport
-          origin. Unmounting the tooltip as the panel closes removes that window. */}
-      <Tooltip content={closeLabel} delay={800} isDisabled={!state.presentationOpen}>
-        <NavbarIcon tone="conversation" aria-label={closeLabel} onClick={actions.close}>
-          <Notebook aria-hidden="true" />
-        </NavbarIcon>
-      </Tooltip>
+      <NavbarIcon tone="conversation" aria-label={closeLabel} onClick={actions.close}>
+        <RightSidebarCollapseIcon className="size-3.5" />
+      </NavbarIcon>
     </div>
   )
 }

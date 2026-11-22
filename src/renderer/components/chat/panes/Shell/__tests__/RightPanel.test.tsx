@@ -85,7 +85,7 @@ vi.mock('@renderer/components/NavbarIcon', () => ({
 }))
 
 vi.mock('@renderer/components/icons/SidebarToggleIcons', () => ({
-  RightSidebarCollapseIcon: () => <span />
+  RightSidebarCollapseIcon: () => <span data-testid="right-sidebar-collapse-icon" />
 }))
 
 vi.mock('@renderer/hooks/command', () => ({
@@ -499,7 +499,7 @@ describe('RightPanel', () => {
     expect(screen.queryByRole('button', { name: 'common.maximize' })).toBeNull()
   })
 
-  it('drops the close tooltip once the panel closes, so it cannot park at the viewport origin', () => {
+  it('uses a hide-sidebar control without a tooltip', () => {
     render(
       <Harness defaultOpen>
         <RightPanelViewport>
@@ -508,19 +508,18 @@ describe('RightPanel', () => {
       </Harness>
     )
 
-    const findCloseTooltip = () =>
+    const closeButton = screen.getByRole('button', { name: 'navbar.hide_sidebar' })
+    expect(closeButton).toContainElement(screen.getByTestId('right-sidebar-collapse-icon'))
+    expect(closeButton.parentElement).not.toHaveAttribute('data-testid', 'tooltip-trigger')
+    expect(
       screen
         .getAllByTestId('tooltip-trigger')
-        .find((node) => node.getAttribute('data-content') === 'common.close_sidebar')
-    expect(findCloseTooltip()).not.toHaveAttribute('data-disabled')
+        .some((node) => node.getAttribute('data-content') === 'navbar.hide_sidebar')
+    ).toBe(false)
 
-    fireEvent.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+    fireEvent.click(closeButton)
 
     expect(screen.getByTestId('right-pane-host')).toHaveAttribute('data-open', 'false')
-    // Re-query after the close rather than reusing the pre-close node: the
-    // tooltip wrapper may remount on state change, which would make an
-    // assertion against the stale reference flaky even when behavior is right.
-    expect(findCloseTooltip()).toHaveAttribute('data-disabled', 'true')
   })
 
   it('drops tooltips anchored in a panel hidden by switching to another panel', () => {
@@ -570,7 +569,7 @@ describe('RightPanel', () => {
     expect(screen.getByTestId('shell-tab-list')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'common.minimize' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'navbar.hide_sidebar' }))
     expect(screen.getByTestId('right-pane-host')).toHaveAttribute('data-open', 'false')
 
     consoleError.mockRestore()

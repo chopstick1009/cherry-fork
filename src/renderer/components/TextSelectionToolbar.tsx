@@ -197,14 +197,14 @@ export function TextSelectionToolbar({
                 </Button>
               </>
             )}
-            {annotations && canAnnotateSelection && (
+            {annotations && (
               <>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   aria-label={t('webview.annotation.underline')}
-                  disabled={annotations.isMutating}
+                  disabled={annotations.isMutating || !canAnnotateSelection}
                   onClick={() => runAnnotationAction('underline')}>
                   <Underline aria-hidden="true" />
                   {t('webview.annotation.underline')}
@@ -214,7 +214,7 @@ export function TextSelectionToolbar({
                   variant="ghost"
                   size="sm"
                   aria-label={t('webview.annotation.thought')}
-                  disabled={annotations.isMutating}
+                  disabled={annotations.isMutating || !canAnnotateSelection}
                   onClick={() => runAnnotationAction('thought')}>
                   <Lightbulb aria-hidden="true" />
                   {t('webview.annotation.thought')}
@@ -224,7 +224,7 @@ export function TextSelectionToolbar({
                   variant="ghost"
                   size="sm"
                   aria-label={t('webview.annotation.followup')}
-                  disabled={annotations.isMutating}
+                  disabled={annotations.isMutating || !canAnnotateSelection}
                   onClick={() => runAnnotationAction('followup')}>
                   <MessagesSquare aria-hidden="true" />
                   {t('webview.annotation.followup')}

@@ -702,7 +702,7 @@ describe('AgentChat artifact pane', () => {
   }
   const closeRightPane = () => {
     fireEvent.click(
-      within(screen.getByTestId('artifact-right-pane')).getByRole('button', { name: 'common.close_sidebar' })
+      within(screen.getByTestId('artifact-right-pane')).getByRole('button', { name: 'navbar.hide_sidebar' })
     )
   }
 

@@ -151,7 +151,7 @@ describe('message annotations', () => {
     expect(screen.queryByRole('dialog', { name: 'webview.annotation.thought' })).not.toBeInTheDocument()
   })
 
-  it('does not offer annotations for a selection spanning separate message parts', async () => {
+  it('keeps annotation actions visible but disabled for a selection spanning separate message parts', async () => {
     renderAnnotations(
       <article data-message-id={messageId} data-message-role="assistant">
         <p data-message-part-id={`${messageId}-part-0`}>First part</p>
@@ -162,9 +162,9 @@ describe('message annotations', () => {
     const second = screen.getByText('Second part').firstChild as Text
     await selectText(first, 0, second, second.length)
 
-    expect(screen.queryByRole('button', { name: 'webview.annotation.underline' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'webview.annotation.thought' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'webview.annotation.followup' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'webview.annotation.underline' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'webview.annotation.thought' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'webview.annotation.followup' })).toBeDisabled()
     expect(mocks.create).not.toHaveBeenCalled()
   })
 })

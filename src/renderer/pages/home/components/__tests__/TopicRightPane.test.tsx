@@ -470,7 +470,7 @@ describe('TopicRightPane', () => {
     expect(screen.getByText('Session browser')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'common.maximize' }))
     expect(screen.getByRole('button', { name: 'common.minimize' })).toHaveAttribute('aria-pressed', 'true')
-    await user.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+    await user.click(screen.getByRole('button', { name: 'navbar.hide_sidebar' }))
     expect(screen.queryByText('Session browser')).not.toBeVisible()
   })
 

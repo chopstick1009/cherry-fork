@@ -405,7 +405,16 @@ const AgentPage = () => {
     visibleConversationId: visibleSession?.id
   })
   const visibleAgent = conversationBootstrap.resources.agent
-  const preserveTabVisuals = !!targetSessionId && visibleSession?.id !== targetSessionId
+  const routeAgent = routeAgentId ? agents.find((agent) => agent.id === routeAgentId) : undefined
+  const tabAgent = visibleAgent ?? visibleAgentFromList ?? routeAgent
+  const preserveTabVisuals =
+    (!!targetSessionId && visibleSession?.id !== targetSessionId) ||
+    (!!routeAgentId && !routeAgent && isAgentsLoading) ||
+    (!!visibleSession?.agentId &&
+      !visibleAgent &&
+      !visibleAgentFromList &&
+      conversationBootstrap.resources.agentLoading &&
+      !visibleSession.name?.trim())
 
   useEffect(() => {
     if (locateMessageId || locateToEnd) closeSurface()
@@ -1142,7 +1151,7 @@ const AgentPage = () => {
   return (
     <>
       <AgentTabRuntime
-        title={visibleSession?.name?.trim() || visibleAgent?.name?.trim() || getDefaultRouteTitle('/app/agents')}
+        title={visibleSession?.name?.trim() || tabAgent?.name?.trim() || getDefaultRouteTitle('/app/agents')}
         preserveVisuals={preserveTabVisuals}
         activeSessionId={activeSession?.id}
         activeSessionSource={activeSessionSource}
