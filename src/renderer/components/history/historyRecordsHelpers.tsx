@@ -152,12 +152,12 @@ export function buildAgentSources(
               src={agent.avatarSrc}
               alt=""
               size={18}
-              className="rounded-full object-cover"
+              className="rounded-[6px] object-cover"
               fallback={
                 <EmojiIcon
                   emoji={getAgentAvatarFromConfiguration(agent.configuration)}
                   size={18}
-                  className="text-foreground"
+                  className="!rounded-[6px] text-foreground"
                 />
               }
             />

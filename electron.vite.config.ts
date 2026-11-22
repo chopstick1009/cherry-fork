@@ -283,6 +283,9 @@ export default defineConfig({
     }
   },
   renderer: {
+    server: {
+      host: '127.0.0.1'
+    },
     define: {
       __APP_EDITION__: JSON.stringify(rendererEdition),
       __APP_RELEASE_HISTORY__: JSON.stringify(bundledReleaseHistory),

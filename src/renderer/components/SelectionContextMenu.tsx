@@ -14,7 +14,6 @@ import { TextSelectionToolbar } from './TextSelectionToolbar'
 const logger = loggerService.withContext('SelectionContextMenu')
 
 const MARKDOWN_FENCE_LINE = /^(?:`{3,}[^`]*|~{3,}.*)$/
-
 const TEXT_BLOCK_TAGS = new Set(['BLOCKQUOTE', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'P', 'PRE', 'TR'])
 
 interface SelectionContextMenuProps {
@@ -60,7 +59,7 @@ function extractSelectedText(selection: Selection, mathOptions?: { singleDollar:
     if (texSource !== null && texSource !== undefined) {
       const textNode = document.createTextNode(texSource)
       if (mathOptions) {
-        // MathML retains display mode even when the selection excludes the outer KaTeX wrapper.
+        // MathML retains display mode even when selection excludes the outer KaTeX wrapper.
         if (element.querySelector('math[display="block"]')) {
           textNode.textContent = `\n$$\n${texSource}\n$$\n`
         } else {
@@ -144,7 +143,6 @@ const SelectionContextMenu: React.FC<SelectionContextMenuProps> = ({ children, o
           .find((line) => line && !MARKDOWN_FENCE_LINE.test(line))
         await exportContentToNotes(title?.slice(0, 50) || t('notes.untitled_note'), text, notesPath)
       } catch (error) {
-        // The Notes exporter owns the write-failure toast.
         logger.error('Failed to save selection to Notes', error as Error)
       } finally {
         savingNote.current = false

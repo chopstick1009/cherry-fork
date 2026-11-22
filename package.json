@@ -38,6 +38,7 @@
     "build:unpack:cn": "pnpm run build:cn && electron-builder --config electron-builder.cn.config.cjs --dir",
     "build:utility-process": "electron-vite build --config electron.vite.entries.config.ts",
     "build:win": "dotenv pnpm run build && electron-builder --win --x64 --arm64",
+    "build:win:dev": "dotenv -v CHERRY_RELEASE_JS_ONLY=true -- pnpm run build && electron-builder --config electron-builder.dev.config.cjs --win portable --x64 && node scripts/packaging/register-dev-portable-profile.cjs",
     "build:win:arm64": "dotenv pnpm run build && electron-builder --win --arm64",
     "build:win:arm64:cn": "pnpm run build:cn && electron-builder --config electron-builder.cn.config.cjs --win --arm64",
     "build:win:cn": "pnpm run build:cn && electron-builder --config electron-builder.cn.config.cjs --win --x64 --arm64",

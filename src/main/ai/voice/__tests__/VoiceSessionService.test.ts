@@ -24,8 +24,6 @@ import {
   APPLE_ASR_MODEL_ID,
   APPLE_TTS_MODEL_ID,
   FUNASR_MODEL_ID,
-  WINDOWS_ASR_MODEL_ID,
-  WINDOWS_TTS_MODEL_ID,
   QWEN3_TTS_MODEL_ID,
   QWEN3_ASR_MODEL_ID
 } from '@shared/ai/localVoice'
@@ -1746,24 +1744,17 @@ describe('VoiceSessionService file and admission contract', () => {
     expect((await recording()).fileEntryId).toBeTruthy()
   })
 
-  it.each([APPLE_ASR_MODEL_ID, WINDOWS_ASR_MODEL_ID])(
-    'keeps failed %s input for retry and deletes it on success',
-    async (modelId) => {
-      if (modelId === WINDOWS_ASR_MODEL_ID)
-        vi.stubGlobal(
-          'process',
-          Object.defineProperties(Object.create(process), { platform: { value: 'win32' }, arch: { value: 'x64' } })
-        )
-      const input = { ...(await recording()), modelId }
-      native.transcribe.mockRejectedValueOnce(new VoiceRuntimeError('operation_failed'))
-      await expect(service.transcribe(a, input)).rejects.toMatchObject({ reason: 'operation_failed' })
-      expect((await files.read(input.fileEntryId, { encoding: 'binary' })).content).toEqual(webm)
-      const result = await service.transcribe(a, { ...input, requestId: randomUUID() })
-      expect(result.text).toBe('private-transcript')
-      expect(native.transcribe).toHaveBeenLastCalledWith(modelId, webm, { language: 'en-US' }, expect.any(AbortSignal))
-      expect(fileEntryService.findById(input.fileEntryId)).toBeNull()
-    }
-  )
+  it('keeps failed Apple input for retry and deletes it on success', async () => {
+    const modelId = APPLE_ASR_MODEL_ID
+    const input = { ...(await recording()), modelId }
+    native.transcribe.mockRejectedValueOnce(new VoiceRuntimeError('operation_failed'))
+    await expect(service.transcribe(a, input)).rejects.toMatchObject({ reason: 'operation_failed' })
+    expect((await files.read(input.fileEntryId, { encoding: 'binary' })).content).toEqual(webm)
+    const result = await service.transcribe(a, { ...input, requestId: randomUUID() })
+    expect(result.text).toBe('private-transcript')
+    expect(native.transcribe).toHaveBeenLastCalledWith(modelId, webm, { language: 'en-US' }, expect.any(AbortSignal))
+    expect(fileEntryService.findById(input.fileEntryId)).toBeNull()
+  })
 
   it('refuses foreign owners and unregistered entries without consuming them', async () => {
     const input = await recording()
@@ -1963,32 +1954,6 @@ describe('VoiceSessionService file and admission contract', () => {
     await rmdir(physicalPath)
     await expect(service.discard(a, input.sessionId)).resolves.toBeUndefined()
     expect(fileEntryService.findById(input.fileEntryId)).toBeNull()
-  })
-
-  it('resolves omitted speech model to Windows x64 and returns its owned WAV', async () => {
-    vi.stubGlobal(
-      'process',
-      Object.defineProperties(Object.create(process), {
-        platform: { value: 'win32' },
-        arch: { value: 'x64' }
-      })
-    )
-    native.speech.mockImplementation(async (modelId, _text, options) => {
-      if (modelId !== WINDOWS_TTS_MODEL_ID || options.speed !== 1.5) throw new VoiceRuntimeError('unsupported')
-      return { audio: wav(), mediaType: 'audio/wav' }
-    })
-    const input = {
-      sessionId: randomUUID(),
-      requestId: randomUUID(),
-      text: 'Windows speech',
-      voice: 'exact',
-      speed: 1.5
-    }
-    const result = await service.speech(a, input)
-    expect(await outputBytes(result.output.id)).toEqual(new Uint8Array(wav()))
-    expect(service.listModels().defaultSpeechModelId).toBe(WINDOWS_TTS_MODEL_ID)
-    await service.discard(a, input.sessionId)
-    expect(outputResponse(result.output.id).status).toBe(404)
   })
 
   it('rejects unsupported platform defaults without retaining empty sessions', async () => {

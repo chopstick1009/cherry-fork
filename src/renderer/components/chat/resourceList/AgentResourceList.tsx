@@ -40,7 +40,7 @@ import {
   getSidebarShortcutResourceIds,
   SIDEBAR_SHORTCUT_PROVIDER_IDS
 } from '@renderer/utils/sidebar'
-import { isProtectedBuiltinAgentRole } from '@shared/ai/builtinAgent'
+import { isDeletionProtectedBuiltinAgentRole, isProtectedBuiltinAgentRole } from '@shared/ai/builtinAgent'
 import type { AgentSessionEntity } from '@shared/data/api/schemas/agentSessions'
 import type { AssistantIconType } from '@shared/data/preference/preferenceTypes'
 import {
@@ -549,7 +549,7 @@ export function AgentResourceList({
       const pinned = agentPinnedIdSet.has(item.id)
       const sidebarPinned = sidebarAgentFavoriteIdSet.has(item.id)
       const owner = agentsRef.current.find((agent) => agent.id === item.id)
-      const deleteSessionsOnly = isProtectedBuiltinAgentRole(owner?.configuration?.builtin_role)
+      const deleteSessionsOnly = isDeletionProtectedBuiltinAgentRole(owner?.configuration?.builtin_role)
 
       return [
         buildResolvedResourceEntityMenuAction({
@@ -600,7 +600,7 @@ export function AgentResourceList({
                 availability: { visible: true, enabled: deletingAgentId === null }
               })
             ]),
-        ...(owner && !deleteSessionsOnly
+        ...(owner && !deleteSessionsOnly && !isProtectedBuiltinAgentRole(owner.configuration?.builtin_role)
           ? [
               buildResolvedResourceEntityMenuAction({
                 id: AGENT_ENTITY_PERMANENT_DELETE_ACTION_ID,

@@ -32,7 +32,6 @@ import {
   Phase,
   ServicePhase
 } from '@main/core/lifecycle'
-import { topicNamingService } from '@main/services/TopicNamingService'
 import { AGENT_SESSION_API_RETRY_CACHE_KEY, type AgentSessionApiRetryInfo } from '@shared/ai/agentSessionApiRetry'
 import {
   AGENT_SESSION_BACKGROUND_TASKS_CACHE_KEY,
@@ -3813,12 +3812,6 @@ export class AgentSessionRuntimeService extends BaseService {
 
   private createPersistenceListener(entry: AgentSessionRuntimeEntry, currentTurn: AgentSessionTurn): StreamListener {
     const { assistantMessageId, modelId } = currentTurn
-    const userText = extractMessageText(currentTurn.userMessage)
-    const afterPersist = currentTurn.shouldAutoName
-      ? async (finalMessage: CherryUIMessage) => {
-          await topicNamingService.maybeRenameAgentSession(entry.agentId, entry.sessionId, userText, finalMessage)
-        }
-      : undefined
     return new PersistenceListener({
       topicId: entry.topicId,
       modelId,
@@ -3836,8 +3829,7 @@ export class AgentSessionRuntimeService extends BaseService {
         onPersisted: () => {
           ;(entry.persistedMessageIds ??= new Set()).add(assistantMessageId)
           entry.usageAttribution?.flush(assistantMessageId)
-        },
-        afterPersist
+        }
       }),
       onPersistFailed: (error) =>
         this.applyRuntimeStateEvent(entry, { type: 'reply-delivery-failed', turn: currentTurn, error })
@@ -4101,15 +4093,6 @@ function createSyntheticUserMessage(sessionId: string): AgentSessionMessageEntit
     createdAt: now,
     updatedAt: now
   }
-}
-
-function extractMessageText(message: AgentSessionMessageEntity): string {
-  return (
-    message.data?.parts
-      ?.filter((part): part is { type: 'text'; text: string } => part.type === 'text' && 'text' in part)
-      .map((part) => part.text)
-      .join('\n') ?? ''
-  )
 }
 
 function createSessionTurn(

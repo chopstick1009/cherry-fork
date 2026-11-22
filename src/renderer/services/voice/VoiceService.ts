@@ -24,6 +24,8 @@ import { enumerateMicrophones, microphoneErrorReason, type MicrophoneDevice } fr
 import { getDefaultVoiceLanguage } from './voiceLanguage'
 
 type VoiceRoute = keyof typeof voiceRequestSchemas
+const REMOVED_WINDOWS_ASR_MODEL_ID = 'local-voice::windows-system-asr'
+const REMOVED_WINDOWS_TTS_MODEL_ID = 'local-voice::windows-system-tts'
 export type VoiceCommandEvent = Extract<VoiceSessionEvent, { type: 'command' }>
 type VoiceStateEvent = Extract<VoiceSessionEvent, { type: 'state' }>
 
@@ -212,8 +214,8 @@ export class VoiceService {
     const storedModelId = preferences.modelId.trim()
     let modelId: LocalTranscriptionModelId | undefined
     if (storedModelId) {
-      if (!isTranscriptionModelId(storedModelId)) throw new VoiceDomainError('unsupported')
-      modelId = storedModelId
+      if (isTranscriptionModelId(storedModelId)) modelId = storedModelId
+      else if (storedModelId !== REMOVED_WINDOWS_ASR_MODEL_ID) throw new VoiceDomainError('unsupported')
     }
     const locale = this.optionalLanguage(preferences.language)
     const language: ResolvedTranscriptionPreferences['language'] = locale
@@ -228,7 +230,8 @@ export class VoiceService {
   async readSpeechPreferenceInput(): Promise<SpeechPreferenceInput> {
     const preferences = await this.readSpeechPreferences()
     const modelId = preferences.modelId.trim()
-    if (modelId && !isSpeechModelId(modelId)) throw new VoiceDomainError('unsupported')
+    if (modelId && !isSpeechModelId(modelId) && modelId !== REMOVED_WINDOWS_TTS_MODEL_ID)
+      throw new VoiceDomainError('unsupported')
     if (
       !Number.isFinite(preferences.speed) ||
       preferences.speed < MIN_SPEECH_SPEED ||
@@ -236,11 +239,11 @@ export class VoiceService {
     ) {
       throw new VoiceDomainError('invalid_request')
     }
-    const voice = preferences.voice.trim()
+    const voice = modelId === REMOVED_WINDOWS_TTS_MODEL_ID ? '' : preferences.voice.trim()
     const language =
       this.optionalLanguage(preferences.language) ?? getDefaultVoiceLanguage(i18n.resolvedLanguage ?? i18n.language)
     return {
-      ...(modelId && { modelId: modelId as LocalSpeechModelId }),
+      ...(modelId && modelId !== REMOVED_WINDOWS_TTS_MODEL_ID && { modelId: modelId as LocalSpeechModelId }),
       ...(voice && { voice }),
       language,
       speed: preferences.speed

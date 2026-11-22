@@ -9,29 +9,17 @@ const require = createRequire(import.meta.url)
 const { prepareNativeHelper } = require('../scripts/prepare-native.cjs')
 const directories: string[] = []
 
-function fixture(platform = 'win32', arch = 'x64') {
+function fixture(platform = 'darwin', arch = 'arm64') {
   const packageRoot = mkdtempSync(join(tmpdir(), 'system-speech-prepare-'))
   directories.push(packageRoot)
-  const source = join(
-    packageRoot,
-    platform === 'win32' ? 'windows/SystemSpeechHelper.cpp' : 'native/Sources/Helper.swift'
-  )
-  const files = [
-    join(packageRoot, 'scripts/build-native.cjs'),
-    source,
-    join(packageRoot, platform === 'win32' ? 'windows/build.cmd' : 'native/Package.swift')
-  ]
+  const source = join(packageRoot, 'native/Sources/Helper.swift')
+  const files = [join(packageRoot, 'scripts/build-native.cjs'), source, join(packageRoot, 'native/Package.swift')]
   for (const file of files) {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, 'initial source')
     utimesSync(file, 1, 1)
   }
-  const helperPath = join(
-    packageRoot,
-    'dist/native',
-    `${platform}-${arch}`,
-    platform === 'win32' ? 'cherry-system-speech.exe' : 'cherry-system-speech'
-  )
+  const helperPath = join(packageRoot, 'dist/native', `${platform}-${arch}`, 'cherry-system-speech')
   const build = (targetArch: string, targetPlatform: string) => {
     mkdirSync(dirname(helperPath), { recursive: true })
     writeFileSync(helperPath, `${targetPlatform}-${targetArch}: ${readFileSync(source, 'utf8')}`, { mode: 0o755 })
@@ -49,10 +37,7 @@ afterEach(() => {
 })
 
 describe('development native speech preparation', () => {
-  it.each([
-    ['win32', 'x64'],
-    ['darwin', 'arm64']
-  ])('builds the missing helper for %s-%s before launching the app', (platform, arch) => {
+  it.each([['darwin', 'arm64']])('builds the missing helper for %s-%s before launching the app', (platform, arch) => {
     const input = fixture(platform, arch)
     expect(prepareNativeHelper(input)).toEqual({ helperPath: input.helperPath, rebuilt: true })
     expect(readFileSync(input.helperPath, 'utf8')).toBe(`${platform}-${arch}: initial source`)
@@ -68,7 +53,7 @@ describe('development native speech preparation', () => {
       }
     })
     expect(result).toEqual({ helperPath: input.helperPath, rebuilt: false })
-    expect(readFileSync(input.helperPath, 'utf8')).toBe('win32-x64: initial source')
+    expect(readFileSync(input.helperPath, 'utf8')).toBe('darwin-arm64: initial source')
   })
 
   it('rebuilds after a native source change instead of launching an outdated helper', () => {
@@ -77,11 +62,12 @@ describe('development native speech preparation', () => {
     utimesSync(input.helperPath, 1, 1)
     writeFileSync(input.source, 'updated source')
     expect(prepareNativeHelper(input).rebuilt).toBe(true)
-    expect(readFileSync(input.helperPath, 'utf8')).toBe('win32-x64: updated source')
+    expect(readFileSync(input.helperPath, 'utf8')).toBe('darwin-arm64: updated source')
   })
 
   it.each([
     ['linux', 'x64'],
+    ['win32', 'x64'],
     ['win32', 'arm64']
   ])('does not block development on unsupported %s-%s hosts', (platform, arch) => {
     expect(

@@ -189,18 +189,6 @@ function prepareSystemSpeechHelper(
   const arch = Arch[context.arch]
   if (platform === 'darwin') {
     buildNativeHelper(arch, platform)
-  } else if (platform === 'win32') {
-    const config = context.packager.config.win
-    const destination = 'system-speech/cherry-system-speech.exe'
-    const resources = (config.extraResources ?? []).filter((resource) => resource.to !== destination)
-    if (arch === 'x64') {
-      buildNativeHelper(arch, platform)
-      resources.push({
-        from: 'native/system-speech/dist/native/win32-x64/cherry-system-speech.exe',
-        to: destination
-      })
-    }
-    config.extraResources = resources
   }
 }
 exports.prepareSystemSpeechHelper = prepareSystemSpeechHelper

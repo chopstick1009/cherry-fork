@@ -444,12 +444,12 @@ const AgentHistoryRecords = ({
             src={agent?.avatarSrc}
             alt=""
             size={20}
-            className="rounded-full object-cover"
+            className="rounded-[6px] object-cover"
             fallback={
               <EmojiIcon
                 emoji={getAgentAvatarFromConfiguration(agent?.configuration)}
                 size={20}
-                className="text-foreground"
+                className="!rounded-[6px] text-foreground"
               />
             }
           />
@@ -521,12 +521,12 @@ const AgentHistoryRecords = ({
                   src={agent?.avatarSrc}
                   alt=""
                   size={16}
-                  className="rounded-full object-cover"
+                  className="rounded-[6px] object-cover"
                   fallback={
                     <EmojiIcon
                       emoji={getAgentAvatarFromConfiguration(agent?.configuration)}
                       size={16}
-                      className="text-foreground"
+                      className="!rounded-[6px] text-foreground"
                     />
                   }
                 />

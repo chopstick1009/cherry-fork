@@ -27,13 +27,13 @@ interface Props {
 const ModelAvatar: FC<Props> = ({ model, size, className }) => {
   const Icon = useIcon(getModelLogoRef(model))
   if (Icon) {
-    return <Icon.Avatar size={size} className={className} />
+    return <Icon.Avatar size={size} className={cn('rounded-[6px]', className)} />
   }
   return (
     <Avatar
-      className={cn('flex items-center justify-center rounded-lg', className)}
+      className={cn('flex items-center justify-center rounded-[6px]', className)}
       style={{ width: size, height: size }}>
-      <AvatarFallback className="rounded-lg">{first(model?.name)}</AvatarFallback>
+      <AvatarFallback className="rounded-[6px]">{first(model?.name)}</AvatarFallback>
     </Avatar>
   )
 }

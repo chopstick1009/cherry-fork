@@ -4724,6 +4724,8 @@ describe('AgentSessionRuntimeService', () => {
     }
     await persistenceListener(handle).onDone(result)
 
+    expect(mocks.maybeRenameAgentSession).not.toHaveBeenCalled()
+
     expect(result.persistence).toEqual({
       status: 'saved',
       message: {

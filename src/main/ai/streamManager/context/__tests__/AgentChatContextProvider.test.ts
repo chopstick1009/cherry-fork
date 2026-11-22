@@ -240,6 +240,7 @@ describe('AgentChatContextProvider', () => {
 
     const prepared = await provider.prepareDispatch(subscriber, openReq())
 
+    expect(mocks.maybeRenameAgentSessionFromFirstUserMessage).not.toHaveBeenCalled()
     expect(mocks.runtimeValidateSession).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'session-1', workspace: { path: '/tmp' } }),
       { headless: false }

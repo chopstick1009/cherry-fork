@@ -81,8 +81,21 @@ function statIfPresent(file: string) {
 export function inspectLegacyProfile(userData: string): 'fresh' | 'ready' | 'legacy' {
   const paths = getLegacyProfilePaths(userData)
   if (statIfPresent(paths.database)?.size) {
-    const db = new Database(paths.database, { readonly: true, fileMustExist: true })
+    const db = new Database(paths.database, {
+      readonly: true,
+      fileMustExist: true
+    })
     try {
+      const hasAppState = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_state'").get()
+      if (!hasAppState) {
+        const hasDrizzleMigrations = db
+          .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'")
+          .get()
+        const hasAppliedDrizzleMigrations =
+          hasDrizzleMigrations && db.prepare('SELECT 1 FROM __drizzle_migrations LIMIT 1').get()
+        return hasAppliedDrizzleMigrations ? 'ready' : 'legacy'
+      }
+
       const value = db.prepare('SELECT value FROM app_state WHERE key = ?').pluck().get(MIGRATION_V2_STATUS)
       if (value !== undefined) {
         const status = migrationStatusSchema.parse(JSON.parse(z.string().parse(value)))
@@ -116,7 +129,10 @@ function sameLocation(a: string, b: string) {
   return normalize(a) === normalize(b)
 }
 
-const portableTrayBackupSchema = z.object({ configExisted: z.boolean(), trayOnClose: z.unknown().optional() })
+const portableTrayBackupSchema = z.object({
+  configExisted: z.boolean(),
+  trayOnClose: z.unknown().optional()
+})
 const legacySettingsSchema = z.record(z.string(), z.unknown())
 
 /** The original launcher can recover its legacy close setting after an interrupted portable handoff. */
@@ -196,7 +212,11 @@ export function findLegacyUpgradeProfile(): LegacyUpgradeProfile | undefined {
       throw new Error(`Data directory unavailable: ${entry.dataPath}`)
     }
     const candidate = inspectLegacyProfile(entry.dataPath)
-    if (candidate !== 'fresh') return { kind: candidate === 'ready' ? 'recover' : 'legacy', path: entry.dataPath }
+    if (candidate !== 'fresh')
+      return {
+        kind: candidate === 'ready' ? 'recover' : 'legacy',
+        path: entry.dataPath
+      }
   }
   return undefined
 }

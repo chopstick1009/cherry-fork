@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { setupTestDatabase } from '@test-helpers/db'
+import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,7 +24,9 @@ import {
 import { MIGRATION_V2_STATUS, readMigrationV2CompletedAt } from '../migrationStatus'
 import { isMigratedFromV1 } from '../v1MigrationOrigin'
 
-vi.mock('@main/data/bootConfig', () => ({ bootConfigService: { get: vi.fn() } }))
+vi.mock('@main/data/bootConfig', () => ({
+  bootConfigService: { get: vi.fn() }
+}))
 vi.mock('@main/core/preboot/userDataLocation', async (importOriginal) => ({
   ...(await importOriginal<typeof UserDataLocationModule>()),
   getNormalizedExecutablePath: vi.fn(() => '/app/cherry')
@@ -43,7 +46,10 @@ describe('legacy profile detection', () => {
     vi.spyOn(application, 'getPath').mockImplementation((key) => (key === 'v1.home_config_file' ? configFile : profile))
     vi.mocked(bootConfigService.get).mockReturnValue(null)
     vi.mocked(getNormalizedExecutablePath).mockReturnValue('/app/cherry')
-    Object.defineProperty(app, 'isPackaged', { configurable: true, value: true })
+    Object.defineProperty(app, 'isPackaged', {
+      configurable: true,
+      value: true
+    })
   })
 
   afterEach(() => {
@@ -99,13 +105,20 @@ describe('legacy profile detection', () => {
       fs.writeFileSync(path.join(profile, marker), marker === 'config.json' ? '{"theme":"dark"}' : '1.9.0')
     }
     const before = fs.readdirSync(profile)
-    expect(findLegacyUpgradeProfile()).toEqual({ kind: 'legacy', path: profile })
+    expect(findLegacyUpgradeProfile()).toEqual({
+      kind: 'legacy',
+      path: profile
+    })
     expect(fs.readdirSync(profile)).toEqual(before)
     expect(fs.existsSync(path.join(profile, 'Data'))).toBe(false)
   })
 
   it('accepts completed migration despite legacy residue and preserves the marker', async () => {
-    const value = { status: 'completed', migratedFromV1: true, completedAt: 1234 }
+    const value = {
+      status: 'completed',
+      migratedFromV1: true,
+      completedAt: 1234
+    }
     await copyDatabase(value)
     fs.writeFileSync(path.join(profile, 'version.log'), '1.9.0')
     const file = path.join(profile, 'Data/cherrystudio.sqlite')
@@ -114,6 +127,19 @@ describe('legacy profile detection', () => {
     expect(fs.readFileSync(file)).toEqual(before)
     expect(isMigratedFromV1()).toBe(true)
     expect(readMigrationV2CompletedAt(dbh.db)).toBe(1234)
+  })
+
+  it('recognizes an established Drizzle database without app_state', async () => {
+    await copyDatabase()
+    const db = new Database(path.join(profile, 'Data/cherrystudio.sqlite'))
+    try {
+      db.exec('DROP TABLE app_state')
+      db.prepare('INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)').run('migration', Date.now())
+    } finally {
+      db.close()
+    }
+
+    expect(inspectLegacyProfile(profile)).toBe('ready')
   })
 
   it('accepts a v2 database created after conversion retirement without a migration marker', async () => {
@@ -127,7 +153,10 @@ describe('legacy profile detection', () => {
   it('blocks a converter crash after schema creation but before the first status record', async () => {
     await copyDatabase()
     fs.writeFileSync(path.join(profile, 'version.log'), '1.9.12')
-    expect(findLegacyUpgradeProfile()).toEqual({ kind: 'legacy', path: profile })
+    expect(findLegacyUpgradeProfile()).toEqual({
+      kind: 'legacy',
+      path: profile
+    })
     expect(dbh.db.select().from(appStateTable).all()).toEqual([])
   })
 
@@ -135,7 +164,10 @@ describe('legacy profile detection', () => {
     await copyDatabase({ status })
     const file = path.join(profile, 'Data/cherrystudio.sqlite')
     const before = fs.readFileSync(file)
-    expect(findLegacyUpgradeProfile()).toEqual({ kind: 'legacy', path: profile })
+    expect(findLegacyUpgradeProfile()).toEqual({
+      kind: 'legacy',
+      path: profile
+    })
     expect(fs.readFileSync(file)).toEqual(before)
     expect(isMigratedFromV1()).toBe(false)
   })
@@ -170,10 +202,18 @@ describe('legacy profile detection', () => {
           appDataPath:
             shape === 'string'
               ? custom
-              : [{ executablePath: shape === 'exact' ? '/app/cherry' : '/old/cherry', dataPath: custom }]
+              : [
+                  {
+                    executablePath: shape === 'exact' ? '/app/cherry' : '/old/cherry',
+                    dataPath: custom
+                  }
+                ]
         })
       )
-      expect(findLegacyUpgradeProfile()).toEqual({ kind: 'legacy', path: custom })
+      expect(findLegacyUpgradeProfile()).toEqual({
+        kind: 'legacy',
+        path: custom
+      })
       expect(fs.readdirSync(profile)).toEqual([])
       expect(fs.readdirSync(custom)).toEqual(['version.log'])
     }
@@ -190,7 +230,10 @@ describe('legacy profile detection', () => {
       fs.writeFileSync(configFile, JSON.stringify({ appDataPath: custom }))
       const file = path.join(custom, 'Data/cherrystudio.sqlite')
       const before = fs.readFileSync(file)
-      expect(findLegacyUpgradeProfile()).toEqual({ kind: 'recover', path: custom })
+      expect(findLegacyUpgradeProfile()).toEqual({
+        kind: 'recover',
+        path: custom
+      })
       expect(fs.readFileSync(file)).toEqual(before)
       expect(fs.readdirSync(profile)).toEqual([])
     }
@@ -216,7 +259,9 @@ describe('legacy profile detection', () => {
   )
 
   it('does not fall back to a fresh profile when the configured path is unavailable', () => {
-    vi.mocked(bootConfigService.get).mockReturnValue({ '/app/cherry': path.join(root, 'missing') })
+    vi.mocked(bootConfigService.get).mockReturnValue({
+      '/app/cherry': path.join(root, 'missing')
+    })
     expect(() => findLegacyUpgradeProfile()).toThrow('Data directory unavailable')
   })
 
@@ -227,7 +272,10 @@ describe('legacy profile detection', () => {
   })
 
   it('does not inspect production legacy config during a development launch', () => {
-    Object.defineProperty(app, 'isPackaged', { configurable: true, value: false })
+    Object.defineProperty(app, 'isPackaged', {
+      configurable: true,
+      value: false
+    })
     fs.writeFileSync(configFile, 'invalid json')
     expect(findLegacyUpgradeProfile()).toBeUndefined()
   })
@@ -258,9 +306,15 @@ describe('fixed migration release downloads', () => {
     ['linux', 'x64', false, false, 'x86_64.AppImage'],
     ['linux', 'arm64', false, false, 'arm64.AppImage']
   ] as const)('selects prerequisite installer for %s/%s', (platform, arch, translated, portable, asset) => {
-    expect(getLegacyUpgradeDownloadUrl({ platform, arch, translated, portable, version: '1.9.12' })).toBe(
-      `https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.12/Cherry-Studio-1.9.12-${asset}`
-    )
+    expect(
+      getLegacyUpgradeDownloadUrl({
+        platform,
+        arch,
+        translated,
+        portable,
+        version: '1.9.12'
+      })
+    ).toBe(`https://github.com/CherryHQ/cherry-studio/releases/download/v1.9.12/Cherry-Studio-1.9.12-${asset}`)
   })
 
   it.each([

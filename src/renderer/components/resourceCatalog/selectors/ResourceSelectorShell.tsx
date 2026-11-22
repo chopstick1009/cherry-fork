@@ -257,7 +257,7 @@ function ResourceSelectorOptionRowComponent<T extends ResourceSelectorShellItem>
           <AssistantAvatarImage
             src={item.avatarSrc}
             alt={item.name}
-            className="size-5 shrink-0 rounded-full object-cover"
+            className="size-5 shrink-0 rounded-[6px] object-cover"
             fallback={leading}
           />
         }

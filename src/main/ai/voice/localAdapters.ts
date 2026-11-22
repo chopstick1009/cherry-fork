@@ -16,7 +16,6 @@ import { funAsrTranscriptionDefinition } from './localAdapters/funasr'
 import { kokoroSpeechDefinition } from './localAdapters/kokoroTts'
 import { qwen3AsrTranscriptionDefinition } from './localAdapters/qwen3Asr'
 import { qwen3SpeechDefinition } from './localAdapters/qwen3Tts'
-import { windowsSpeechDefinition, windowsTranscriptionDefinition } from './localAdapters/windows'
 import type { LocalVoiceStatus, SpeechModelDefinition, TranscriptionModelDefinition } from './voiceModelTypes'
 import {
   getVoiceEnvironment,
@@ -31,13 +30,11 @@ export type { LocalVoiceStatus } from './voiceModelTypes'
 
 const transcriptionDefinitions: readonly TranscriptionModelDefinition[] = [
   appleTranscriptionDefinition,
-  windowsTranscriptionDefinition,
   funAsrTranscriptionDefinition,
   qwen3AsrTranscriptionDefinition
 ]
 const speechDefinitions: readonly SpeechModelDefinition[] = [
   appleSpeechDefinition,
-  windowsSpeechDefinition,
   qwen3SpeechDefinition,
   kokoroSpeechDefinition
 ]

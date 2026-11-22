@@ -2,7 +2,7 @@ import type { SpeechModelV3, TranscriptionModelV3 } from '@ai-sdk/provider'
 import { mockMainLoggerService } from '@test-mocks/MainLoggerService'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { APPLE_ASR_MODEL_ID, APPLE_TTS_MODEL_ID, WINDOWS_ASR_MODEL_ID } from '@shared/ai/localVoice'
+import { APPLE_ASR_MODEL_ID, APPLE_TTS_MODEL_ID } from '@shared/ai/localVoice'
 
 const models = vi.hoisted(() => ({
   speech: undefined as SpeechModelV3 | undefined,
@@ -86,9 +86,7 @@ describe('complete voice execution through real aiCore', () => {
   })
   it.each([
     [APPLE_ASR_MODEL_ID, ''],
-    [APPLE_ASR_MODEL_ID, ' \n\t '],
-    [WINDOWS_ASR_MODEL_ID, ''],
-    [WINDOWS_ASR_MODEL_ID, ' \n\t ']
+    [APPLE_ASR_MODEL_ID, ' \n\t ']
   ] as const)('reports no speech for %s with an empty or blank transcript (%j)', async (modelId, text) => {
     models.transcription = {
       specificationVersion: 'v3',
@@ -187,41 +185,38 @@ describe('complete voice execution through real aiCore', () => {
     expect(logs).not.toContain('PRIVATE-TTS-TEXT')
   })
 
-  it.each([APPLE_ASR_MODEL_ID, WINDOWS_ASR_MODEL_ID])(
-    'returns %s transcription with no text or paths in logs',
-    async (modelId) => {
-      models.transcription = {
-        specificationVersion: 'v3',
-        provider: 'test-local',
-        modelId,
-        doGenerate: async () => ({
-          text: 'PRIVATE-TRANSCRIPT',
-          segments: [],
-          language: 'en',
-          durationInSeconds: 1,
-          warnings: [],
-          response: { timestamp: new Date(0), modelId, body: '/private/recording.webm' }
-        })
-      }
-      const result = await transcribe(
-        modelId,
-        Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3, 0x80]),
-        { language: 'en-US' },
-        new AbortController().signal
-      )
-      expect(result).toEqual({ text: 'PRIVATE-TRANSCRIPT', segments: [], language: 'en', durationInSeconds: 1 })
-      const logs = JSON.stringify([
-        mockMainLoggerService.info.mock.calls,
-        mockMainLoggerService.error.mock.calls,
-        mockMainLoggerService.warn.mock.calls,
-        mockMainLoggerService.debug.mock.calls,
-        mockMainLoggerService.verbose.mock.calls,
-        mockMainLoggerService.silly.mock.calls
-      ])
-      expect(logs).not.toContain('PRIVATE-TRANSCRIPT')
-      expect(logs).not.toContain('/private/recording.webm')
+  it.each([APPLE_ASR_MODEL_ID])('returns %s transcription with no text or paths in logs', async (modelId) => {
+    models.transcription = {
+      specificationVersion: 'v3',
+      provider: 'test-local',
+      modelId,
+      doGenerate: async () => ({
+        text: 'PRIVATE-TRANSCRIPT',
+        segments: [],
+        language: 'en',
+        durationInSeconds: 1,
+        warnings: [],
+        response: { timestamp: new Date(0), modelId, body: '/private/recording.webm' }
+      })
     }
-  )
+    const result = await transcribe(
+      modelId,
+      Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3, 0x80]),
+      { language: 'en-US' },
+      new AbortController().signal
+    )
+    expect(result).toEqual({ text: 'PRIVATE-TRANSCRIPT', segments: [], language: 'en', durationInSeconds: 1 })
+    const logs = JSON.stringify([
+      mockMainLoggerService.info.mock.calls,
+      mockMainLoggerService.error.mock.calls,
+      mockMainLoggerService.warn.mock.calls,
+      mockMainLoggerService.debug.mock.calls,
+      mockMainLoggerService.verbose.mock.calls,
+      mockMainLoggerService.silly.mock.calls
+    ])
+    expect(logs).not.toContain('PRIVATE-TRANSCRIPT')
+    expect(logs).not.toContain('/private/recording.webm')
+  })
 
   it('delivers canonical PCM WAV through transcribe as audio/wav', async () => {
     let delivered: { audio: Uint8Array; mediaType: string } | undefined

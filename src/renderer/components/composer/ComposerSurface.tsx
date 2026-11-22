@@ -242,7 +242,10 @@ function DeferredComposerSurface(props: ComposerSurfaceProps) {
     const actions: ComposerSurfaceActions = {
       focus: focusTextarea,
       onTextChange: updateText,
-      appendText: () => false,
+      appendText: (text) => {
+        updateText((previous) => `${previous}${previous && !previous.endsWith('\n') ? '\n\n' : ''}${text}`)
+        return true
+      },
       replaceDraft: (draft) => {
         selectionRef.current = { start: draft.text.length, end: draft.text.length }
         props.onTextChange(draft.text)

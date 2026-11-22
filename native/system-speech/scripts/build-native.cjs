@@ -18,29 +18,10 @@ function buildAppleHelper(arch) {
   return destination
 }
 
-function buildWindowsHelper(arch) {
-  if (arch !== 'x64') throw new Error('Windows speech helper supports x64 only')
-  const packageRoot = resolve(__dirname, '..')
-  const destination = join(packageRoot, 'dist', 'native', 'win32-x64', 'cherry-system-speech.exe')
-  const script = join(packageRoot, 'windows', 'build.cmd')
-  const build = spawnSync(
-    process.env.ComSpec || 'cmd.exe',
-    ['/d', '/s', '/c', `""${script}" "${dirname(destination)}""`],
-    {
-      stdio: 'inherit',
-      windowsHide: true,
-      windowsVerbatimArguments: true
-    }
-  )
-  if (build.error || build.status !== 0) throw new Error('Windows speech helper compilation failed')
-  return destination
-}
-
 function buildNativeHelper(arch, platform = process.platform) {
   if (platform !== process.platform) throw new Error('System speech helper requires a matching build host')
   if (platform === 'darwin') return buildAppleHelper(arch)
-  if (platform === 'win32') return buildWindowsHelper(arch)
-  throw new Error('System speech helper requires a macOS or Windows build host')
+  throw new Error('System speech helper requires a macOS build host')
 }
 
 exports.buildNativeHelper = buildNativeHelper

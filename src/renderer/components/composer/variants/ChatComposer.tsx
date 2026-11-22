@@ -8,6 +8,7 @@ import { loggerService } from '@logger'
 import { ContextUsageMeter, ContextUsageSummary } from '@renderer/components/chat/contextUsage'
 import { MessageEditingProvider, useMessageEditing } from '@renderer/components/chat/editing/MessageEditingContext'
 import { useChatLayoutMode } from '@renderer/components/chat/layout/ChatLayoutModeContext'
+import { formatFollowupImport } from '@renderer/components/chat/messages/annotations/annotationFollowups'
 import { replaceReasoningPartText } from '@renderer/components/chat/messages/blocks/reasoningEditing'
 import { useConversationTopBarPortalLayout } from '@renderer/components/chat/shell/ConversationTopBarPortal'
 import { useActiveComposerOverride, useComposerLayerActive } from '@renderer/components/composer/ComposerContext'
@@ -61,6 +62,7 @@ import { createComposerFileTokenSourceId } from '@renderer/utils/message/compose
 import { canEditAssistantMessageParts } from '@renderer/utils/message/partsHelpers'
 import { isOpenAIWebSearchModel, resolveReasoningEffortForModel } from '@renderer/utils/model'
 import type { ComposerChatTarget, ComposerQueuedMessagePayload } from '@shared/ai/transport'
+import type { Annotation } from '@shared/data/types/annotation'
 import type { KnowledgeBase } from '@shared/data/types/knowledge'
 import type { CherryMessagePart } from '@shared/data/types/message'
 import {
@@ -1325,6 +1327,55 @@ const ChatComposerInner = ({
     return EventEmitter.on(EVENT_NAMES.FOCUS_CHAT_COMPOSER, (payload) => {
       const topicId = typeof payload === 'object' && payload ? (payload as { topicId?: string }).topicId : undefined
       if (topicId !== streamScopeKey) return
+      actionsRef.current.focus('end')
+    })
+  }, [actionsRef, layerActive, streamScopeKey])
+
+  useEffect(() => {
+    if (!layerActive) return
+    return EventEmitter.on(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, (payload: unknown) => {
+      if (!payload || typeof payload !== 'object') return
+      const request = payload as { topicId?: unknown; messageSeq?: unknown; turn?: unknown; annotations?: unknown }
+      if (
+        request.topicId !== streamScopeKey ||
+        typeof request.messageSeq !== 'number' ||
+        !Number.isSafeInteger(request.messageSeq) ||
+        typeof request.turn !== 'number' ||
+        !Number.isSafeInteger(request.turn) ||
+        !Array.isArray(request.annotations)
+      )
+        return
+      const annotations = request.annotations.filter(
+        (annotation): annotation is Annotation =>
+          Boolean(annotation) &&
+          typeof annotation === 'object' &&
+          (annotation as { kind?: unknown }).kind === 'followup' &&
+          typeof (annotation as { exact?: unknown }).exact === 'string' &&
+          typeof (annotation as { content?: unknown }).content === 'string'
+      )
+      if (!annotations.length) return
+
+      const currentDraft = actionsRef.current.getDraft()
+      let text = currentDraft.text
+      const tokens = [...currentDraft.tokens]
+      for (const annotation of annotations) {
+        const quote = formatFollowupImport(annotation, { turn: request.turn, messageSeq: request.messageSeq })
+        const separator = text ? (text.endsWith('\n') ? '\n' : '\n\n') : ''
+        const textOffset = text.length + separator.length
+        const index = tokens.length
+        text += `${separator}${quote.promptText}`
+        tokens.push({
+          id: `annotation-followup:${annotation.id}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
+          kind: 'quote',
+          icon: 'messages',
+          label: quote.label,
+          description: quote.description,
+          promptText: quote.promptText,
+          index,
+          textOffset
+        })
+      }
+      actionsRef.current.replaceDraft({ text, tokens })
       actionsRef.current.focus('end')
     })
   }, [actionsRef, layerActive, streamScopeKey])

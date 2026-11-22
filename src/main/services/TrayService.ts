@@ -16,6 +16,7 @@ import { isRunningWindowsExecutableSigned } from '@main/utils/windowsExecutableS
 import icon from '../../../build/tray_icon.png?asset'
 import iconDark from '../../../build/tray_icon_dark.png?asset'
 import iconLight from '../../../build/tray_icon_light.png?asset'
+import windowsIcon from '../../../build/cherry-studio.ico?asset'
 
 const logger = loggerService.withContext('TrayService')
 
@@ -55,7 +56,7 @@ export class TrayService extends BaseService implements Activatable {
   }
 
   onActivate(): void {
-    const iconPath = isMac ? (nativeTheme.shouldUseDarkColors ? iconLight : iconDark) : icon
+    const iconPath = isWin ? windowsIcon : isMac ? (nativeTheme.shouldUseDarkColors ? iconLight : iconDark) : icon
     const tray = isWin && shouldUseWindowsTrayGuid() ? new Tray(iconPath, getWindowsTrayGuid()) : new Tray(iconPath)
 
     if (isWin) {

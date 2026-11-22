@@ -4239,79 +4239,79 @@ describe('Sessions', () => {
     expect(recycleBinFeedbackMocks.showRecycleBinUndo).not.toHaveBeenCalled()
   })
 
-  it.each([
-    { builtinRole: 'assistant' as const, name: 'Cherry Assistant' },
-    { builtinRole: 'support' as const, name: 'Cherry Support' }
-  ])('deletes only sessions from the protected built-in $name group', async ({ builtinRole, name }) => {
-    const onActiveAgentDeleted = vi.fn()
-    preferenceMocks.values.set('agent.session.display_mode', 'agent')
-    agentDataMocks.useAgents.mockReturnValue({
-      agents: [
-        {
-          id: 'agent-a',
-          model: 'model-a',
-          name,
-          configuration: { builtin_role: builtinRole }
-        }
-      ],
-      isLoading: false,
-      error: undefined,
-      refetch: dataApiMocks.refetchAgents
-    })
-    setupSessions({
-      sessions: [createSession({ id: 'session-a', name: 'Alpha session', agentId: 'agent-a', orderKey: 'a' })]
-    })
-    dataApiMocks.deleteAgentSessions.mockResolvedValueOnce({ deletedIds: ['session-a', 'session-not-loaded'] })
-
-    render(<SessionsForTest onActiveAgentDeleted={onActiveAgentDeleted} />)
-
-    const agentGroup = screen.getByRole('button', { name }).closest('div')
-    expect(agentGroup).not.toBeNull()
-    await userEvent.setup().click(within(agentGroup as HTMLElement).getByRole('button', { name: 'More' }))
-    const deleteSessionsMenuItem = screen
-      .getAllByRole('menuitem', { name: 'Archive all conversations' })
-      .find((button) => button.getAttribute('data-slot') === 'dropdown-menu-item')
-    expect(deleteSessionsMenuItem).toBeDefined()
-    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: /Delete Permanently/ })).not.toBeInTheDocument()
-
-    fireEvent.click(deleteSessionsMenuItem as HTMLElement)
-
-    await vi.waitFor(() =>
-      expect(dataApiMocks.deleteAgentSessions).toHaveBeenCalledWith({ params: { agentId: 'agent-a' } })
-    )
-    expect(dataApiMocks.deleteAgent).not.toHaveBeenCalled()
-    expect(tabsContextMocks.closeConversationTabs).toHaveBeenCalledWith('agents', ['session-a', 'session-not-loaded'])
-    expect(popup.confirm).not.toHaveBeenCalled()
-    expect(conversationOwnerPopupMocks.show).not.toHaveBeenCalled()
-    expect(archiveSessionsPopupMocks.show).toHaveBeenCalledWith(
-      expect.objectContaining({ agentName: name, sessionCount: 1 })
-    )
-    expect(onActiveAgentDeleted).toHaveBeenCalledWith('agent-a')
-    await vi.waitFor(() =>
-      expect(recycleBinFeedbackMocks.showRecycleBinBatchUndo).toHaveBeenCalledWith({
-        itemCount: 2,
-        onUndo: expect.any(Function)
+  it.each([{ builtinRole: 'doctor' as const, name: 'System Doctor' }])(
+    'deletes only sessions from the system-only built-in $name group',
+    async ({ builtinRole, name }) => {
+      const onActiveAgentDeleted = vi.fn()
+      preferenceMocks.values.set('agent.session.display_mode', 'agent')
+      agentDataMocks.useAgents.mockReturnValue({
+        agents: [
+          {
+            id: 'agent-a',
+            model: 'model-a',
+            name,
+            configuration: { builtin_role: builtinRole }
+          }
+        ],
+        isLoading: false,
+        error: undefined,
+        refetch: dataApiMocks.refetchAgents
       })
-    )
+      setupSessions({
+        sessions: [createSession({ id: 'session-a', name: 'Alpha session', agentId: 'agent-a', orderKey: 'a' })]
+      })
+      dataApiMocks.deleteAgentSessions.mockResolvedValueOnce({ deletedIds: ['session-a', 'session-not-loaded'] })
 
-    sessionDataMocks.restoreSession.mockRejectedValueOnce(
-      new IpcError(aiErrorCodes.AI_AGENT_SESSION_NOT_FOUND, 'Session active')
-    )
-    const getActiveSession = vi.spyOn(dataApiService, 'get').mockResolvedValue({ id: 'session-a' })
-    const reloadCountBeforeUndo = sessionDataMocks.reload.mock.calls.length
-    await expect(recycleBinFeedbackMocks.showRecycleBinBatchUndo.mock.calls.at(-1)?.[0].onUndo()).resolves.toEqual({
-      restored: ['session-a', 'session-not-loaded'],
-      failed: []
-    })
-    expect(sessionDataMocks.restoreSession).toHaveBeenCalledTimes(2)
-    expect(sessionDataMocks.restoreSession).toHaveBeenNthCalledWith(1, 'session-a')
-    expect(sessionDataMocks.restoreSession).toHaveBeenNthCalledWith(2, 'session-not-loaded')
-    expect(getActiveSession).toHaveBeenCalledWith('/agent-sessions/session-a')
-    expect(sessionDataMocks.reload).toHaveBeenCalledTimes(reloadCountBeforeUndo + 1)
-    expect(dataApiMocks.restoreAgent).not.toHaveBeenCalled()
-    getActiveSession.mockRestore()
-  })
+      render(<SessionsForTest onActiveAgentDeleted={onActiveAgentDeleted} />)
+
+      const agentGroup = screen.getByRole('button', { name }).closest('div')
+      expect(agentGroup).not.toBeNull()
+      await userEvent.setup().click(within(agentGroup as HTMLElement).getByRole('button', { name: 'More' }))
+      const deleteSessionsMenuItem = screen
+        .getAllByRole('menuitem', { name: 'Archive all conversations' })
+        .find((button) => button.getAttribute('data-slot') === 'dropdown-menu-item')
+      expect(deleteSessionsMenuItem).toBeDefined()
+      expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('menuitem', { name: /Delete Permanently/ })).not.toBeInTheDocument()
+
+      fireEvent.click(deleteSessionsMenuItem as HTMLElement)
+
+      await vi.waitFor(() =>
+        expect(dataApiMocks.deleteAgentSessions).toHaveBeenCalledWith({ params: { agentId: 'agent-a' } })
+      )
+      expect(dataApiMocks.deleteAgent).not.toHaveBeenCalled()
+      expect(tabsContextMocks.closeConversationTabs).toHaveBeenCalledWith('agents', ['session-a', 'session-not-loaded'])
+      expect(popup.confirm).not.toHaveBeenCalled()
+      expect(conversationOwnerPopupMocks.show).not.toHaveBeenCalled()
+      expect(archiveSessionsPopupMocks.show).toHaveBeenCalledWith(
+        expect.objectContaining({ agentName: name, sessionCount: 1 })
+      )
+      expect(onActiveAgentDeleted).toHaveBeenCalledWith('agent-a')
+      await vi.waitFor(() =>
+        expect(recycleBinFeedbackMocks.showRecycleBinBatchUndo).toHaveBeenCalledWith({
+          itemCount: 2,
+          onUndo: expect.any(Function)
+        })
+      )
+
+      sessionDataMocks.restoreSession.mockRejectedValueOnce(
+        new IpcError(aiErrorCodes.AI_AGENT_SESSION_NOT_FOUND, 'Session active')
+      )
+      const getActiveSession = vi.spyOn(dataApiService, 'get').mockResolvedValue({ id: 'session-a' })
+      const reloadCountBeforeUndo = sessionDataMocks.reload.mock.calls.length
+      await expect(recycleBinFeedbackMocks.showRecycleBinBatchUndo.mock.calls.at(-1)?.[0].onUndo()).resolves.toEqual({
+        restored: ['session-a', 'session-not-loaded'],
+        failed: []
+      })
+      expect(sessionDataMocks.restoreSession).toHaveBeenCalledTimes(2)
+      expect(sessionDataMocks.restoreSession).toHaveBeenNthCalledWith(1, 'session-a')
+      expect(sessionDataMocks.restoreSession).toHaveBeenNthCalledWith(2, 'session-not-loaded')
+      expect(getActiveSession).toHaveBeenCalledWith('/agent-sessions/session-a')
+      expect(sessionDataMocks.reload).toHaveBeenCalledTimes(reloadCountBeforeUndo + 1)
+      expect(dataApiMocks.restoreAgent).not.toHaveBeenCalled()
+      getActiveSession.mockRestore()
+    }
+  )
 
   it.each(['cancel', 'confirm', 'empty'] as const)(
     'archives only the selected Agent conversations after %s',

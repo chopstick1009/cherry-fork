@@ -738,7 +738,13 @@ export class CacheService extends BaseService {
 
       const content = JSON.stringify(snapshot, null, 2)
       fs.writeFileSync(tempPath, content, 'utf-8')
-      fs.renameSync(tempPath, this.persistFilePath)
+      try {
+        fs.renameSync(tempPath, this.persistFilePath)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error
+        fs.copyFileSync(tempPath, this.persistFilePath)
+        fs.rmSync(tempPath, { force: true })
+      }
     } catch (error) {
       try {
         fs.rmSync(tempPath, { force: true })

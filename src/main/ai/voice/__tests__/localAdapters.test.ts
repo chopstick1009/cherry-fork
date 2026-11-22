@@ -5,8 +5,6 @@ import {
   APPLE_TTS_MODEL_ID,
   FUNASR_MODEL_ID,
   KOKORO_TTS_MODEL_ID,
-  WINDOWS_ASR_MODEL_ID,
-  WINDOWS_TTS_MODEL_ID,
   TranscriptionLanguageSource,
   VoiceModelSupport,
   VoiceResourceOperation
@@ -41,10 +39,7 @@ describe('device-scoped voice catalog and request policy', () => {
       { platform: 'darwin', arch: 'arm64', majorVersion: 26 },
       [APPLE_ASR_MODEL_ID, APPLE_TTS_MODEL_ID, FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]
     ],
-    [
-      { platform: 'win32', arch: 'x64' },
-      [WINDOWS_ASR_MODEL_ID, WINDOWS_TTS_MODEL_ID, FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]
-    ],
+    [{ platform: 'win32', arch: 'x64' }, [FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]],
     [{ platform: 'linux', arch: 'x64' }, [FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]],
     [{ platform: 'win32', arch: 'arm64' }, [FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]],
     [{ platform: 'darwin', arch: 'arm64', majorVersion: 12 }, [FUNASR_MODEL_ID, KOKORO_TTS_MODEL_ID]]
@@ -56,12 +51,6 @@ describe('device-scoped voice catalog and request policy', () => {
   })
 
   it('preserves the identity and support reason of saved unavailable models', () => {
-    expect(
-      describeVoiceModel(WINDOWS_ASR_MODEL_ID, { platform: 'darwin', arch: 'arm64', majorVersion: 26 })
-    ).toMatchObject({ support: VoiceModelSupport.UnsupportedPlatform, model: { id: WINDOWS_ASR_MODEL_ID } })
-    expect(describeVoiceModel(WINDOWS_ASR_MODEL_ID, { platform: 'win32', arch: 'arm64' }).support).toBe(
-      VoiceModelSupport.UnsupportedArchitecture
-    )
     expect(describeVoiceModel('removed-model')).toEqual({ support: VoiceModelSupport.UnknownModel, model: null })
   })
 

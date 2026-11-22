@@ -8,8 +8,6 @@ import {
   FUNASR_SUPPORTED_PLATFORM_KEYS,
   KOKORO_TTS_MODEL_ID,
   SHERPA_VOICE_SUPPORTED_PLATFORM_KEYS,
-  WINDOWS_TTS_MODEL_ID,
-  WINDOWS_ASR_MODEL_ID,
   type LocalSpeechModelId,
   type LocalTranscriptionModelId
 } from '@shared/ai/localVoice'
@@ -61,7 +59,6 @@ export function resolveDefaultAsrModel(
     if (platform.majorVersion !== undefined && Number.isInteger(platform.majorVersion) && platform.majorVersion >= 13)
       return APPLE_ASR_MODEL_ID
   }
-  if (platform.platform === 'win32' && platform.arch === 'x64') return WINDOWS_ASR_MODEL_ID
   const platformKey = `${platform.platform}-${platform.arch}`
   return FUNASR_SUPPORTED_PLATFORM_KEYS.some((supported) => supported === platformKey) ? FUNASR_MODEL_ID : undefined
 }
@@ -72,7 +69,6 @@ export function resolveDefaultSpeechModel(platform: {
   majorVersion?: number
   minorVersion?: number
 }): LocalSpeechModelId | undefined {
-  if (platform.platform === 'win32' && platform.arch === 'x64') return WINDOWS_TTS_MODEL_ID
   if (
     platform.platform === 'darwin' &&
     platform.majorVersion !== undefined &&

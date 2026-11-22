@@ -26,11 +26,15 @@ function resolveAppEdition(): AppEdition {
     return parseAppEdition(developmentEdition)
   }
 
+  return parseAppMetadata().edition
+}
+
+function parseAppMetadata() {
   const packageMetadata = JSON.parse(readFileSync(application.getPath('app.root', 'package.json'), 'utf8')) as {
     cherryEdition?: unknown
+    cherryAppId?: unknown
   }
-
-  return parseAppEdition(packageMetadata.cherryEdition)
+  return { edition: parseAppEdition(packageMetadata.cherryEdition), appId: packageMetadata.cherryAppId }
 }
 
 let cachedAppEdition: AppEdition | undefined
@@ -41,5 +45,9 @@ export function getAppEdition(): AppEdition {
 }
 
 export function getApplicationId(): string {
+  if (app.isPackaged) {
+    const { appId } = parseAppMetadata()
+    if (typeof appId === 'string' && appId.trim()) return appId
+  }
   return APPLICATION_IDS[getAppEdition()]
 }

@@ -1072,6 +1072,31 @@ describe('ComposerToken', () => {
     expect(screen.getByTestId('composer-token-tooltip-content')).not.toHaveTextContent('<blockquote>')
   })
 
+  it('renders follow-up quote tokens with the message-square icon and complete source preview', () => {
+    const description = 'Turn 3, message 7, range [2, 7)\nSource excerpt\nUser follow-up'
+    const { container } = render(
+      <ComposerToken
+        token={{
+          id: 'followup:1',
+          kind: 'quote',
+          icon: 'messages',
+          label: 'Source excerpt',
+          description,
+          promptText: '<blockquote>serialized follow-up</blockquote>'
+        }}
+        onRemove={vi.fn()}
+      />
+    )
+
+    expect(container.querySelector('svg.lucide-messages-square')).toBeInTheDocument()
+    const tooltip = screen.getByTestId('composer-token-tooltip-content')
+    expect(tooltip).toHaveTextContent('Turn 3, message 7, range [2, 7)')
+    expect(tooltip).toHaveTextContent('Source excerpt')
+    expect(tooltip).toHaveTextContent('User follow-up')
+    expect(tooltip.querySelector('.max-h-80.overflow-y-auto')).toBeInTheDocument()
+    expect(container.querySelector('[data-composer-token-remove]')).not.toHaveAttribute('title')
+  })
+
   it('renders skill tokens without a popover and exposes inline remove on the icon', () => {
     const onRemove = vi.fn()
     const { container } = render(

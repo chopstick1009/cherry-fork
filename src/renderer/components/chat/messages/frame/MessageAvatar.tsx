@@ -6,10 +6,10 @@ import { isEmoji } from '@renderer/utils/naming'
 
 export const MESSAGE_AVATAR_SIZE = 30
 export const MESSAGE_AVATAR_CONTAINER_CLASS =
-  'message-avatar flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full p-0'
-export const MESSAGE_AVATAR_INNER_CLASS = 'size-full rounded-full p-0'
-export const MESSAGE_AVATAR_IMAGE_CLASS = 'size-full object-cover p-0'
-export const MESSAGE_AVATAR_FALLBACK_CLASS = 'size-full rounded-full p-0'
+  'message-avatar flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-[6px] p-0'
+export const MESSAGE_AVATAR_INNER_CLASS = 'size-full rounded-[6px] p-0'
+export const MESSAGE_AVATAR_IMAGE_CLASS = 'size-full rounded-[6px] object-cover p-0'
+export const MESSAGE_AVATAR_FALLBACK_CLASS = 'size-full rounded-[6px] p-0'
 export const MESSAGE_MODEL_AVATAR_ICON_CLASS = 'size-full'
 
 export const MessageAvatarFrame = ({ className, ...props }: ComponentPropsWithoutRef<'div'>) => (
@@ -35,7 +35,7 @@ const MessageAvatar = ({
   return (
     <MessageAvatarFrame className={cn(clickable && 'cursor-pointer', className)} onClick={onClick} {...props}>
       {isEmoji(avatar) ? (
-        <EmojiIcon emoji={avatar} size={MESSAGE_AVATAR_SIZE} />
+        <EmojiIcon emoji={avatar} size={MESSAGE_AVATAR_SIZE} className="!rounded-[6px]" />
       ) : (
         <Avatar className={MESSAGE_AVATAR_INNER_CLASS} style={!avatar ? fallbackAvatarStyle : undefined}>
           {avatar && <AvatarImage className={MESSAGE_AVATAR_IMAGE_CLASS} src={avatar} />}

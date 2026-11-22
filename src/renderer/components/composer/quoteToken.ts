@@ -3,6 +3,7 @@ import { formatQuotedText } from '@renderer/utils/formats'
 export const QUOTE_TOOLTIP_CONTENT_CLASS_NAME = 'max-w-[min(32rem,calc(100vw-2rem))]'
 export const QUOTE_TOOLTIP_BODY_CLASS_NAME =
   'whitespace-pre-wrap text-left overflow-hidden [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:4]'
+export const QUOTE_TOOLTIP_FULL_BODY_CLASS_NAME = 'max-h-80 overflow-y-auto whitespace-pre-wrap text-left'
 
 const BLOCKQUOTE_TRAILING_NEWLINE_PATTERN = /(<\/blockquote>)\n$/
 const BLOCKQUOTE_PROMPT_PATTERN = /^<blockquote>\n\n([\s\S]*)\n<\/blockquote>$/

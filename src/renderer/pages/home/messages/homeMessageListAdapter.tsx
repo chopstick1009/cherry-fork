@@ -165,6 +165,26 @@ export function useHomeMessageListProviderValue({
     })
   }, [messages, resolvedAssistantId, topicId])
 
+  const latestAssistantPosition = useMemo(() => {
+    let messageId: string | null = null
+    let messageSeq = 0
+    let turn = 0
+    messageItems.forEach((message, index) => {
+      if (message.role !== 'assistant') return
+      messageId = message.id
+      messageSeq = index + 1
+      turn += 1
+    })
+    return { messageId, messageSeq, turn }
+  }, [messageItems])
+
+  useEffect(() => {
+    void EventEmitter.emit(EVENT_NAMES.LATEST_ASSISTANT_MESSAGE, {
+      topicId,
+      ...latestAssistantPosition
+    })
+  }, [latestAssistantPosition, topicId])
+
   const messagesRef = useRef<MessageListItem[]>(messageItems)
   const partsByMessageIdRef = useRef(partsByMessageId)
   const listRuntimeRef = useRef<MessageListRuntime | null>(null)

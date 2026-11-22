@@ -25,6 +25,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       if (key === 'common.copy') return 'Copy'
       if (key === 'chat.message.quote') return 'Quote'
+      if (key === 'notes.save') return 'Save to notes'
       return key
     }
   })
@@ -158,6 +159,7 @@ describe('SelectionContextMenu', () => {
 
     expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Quote' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save to notes' })).not.toBeInTheDocument()
   })
 
   it('shows selection actions when text is selected', () => {
@@ -173,6 +175,7 @@ describe('SelectionContextMenu', () => {
 
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Quote' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save to notes' })).not.toBeInTheDocument()
   })
 
   it('preserves indentation when selected code includes line numbers', () => {

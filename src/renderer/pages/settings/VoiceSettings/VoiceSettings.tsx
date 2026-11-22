@@ -50,8 +50,6 @@ import {
   QWEN3_TTS_MODEL_ID,
   KOKORO_TTS_MODEL_ID,
   DOWNLOADABLE_SPEECH_BUNDLES,
-  WINDOWS_ASR_MODEL_ID,
-  WINDOWS_TTS_MODEL_ID,
   type LocalSpeechModelId,
   type LocalVoiceModelDescriptor,
   isTranscriptionModelId,
@@ -109,15 +107,15 @@ const SPEECH_PREFERENCE_KEYS = {
   voiceId: 'feature.voice.speech.voice_id',
   language: 'feature.voice.speech.language'
 } as const
+const REMOVED_WINDOWS_ASR_MODEL_ID = 'local-voice::windows-system-asr'
+const REMOVED_WINDOWS_TTS_MODEL_ID = 'local-voice::windows-system-tts'
 const MODEL_LABEL_KEYS: Record<LocalVoiceModelId, string> = {
   [APPLE_ASR_MODEL_ID]: 'settings.voice.model.apple_asr',
   [APPLE_TTS_MODEL_ID]: 'settings.voice.model.apple_tts',
   [QWEN3_TTS_MODEL_ID]: 'settings.voice.model.qwen3_tts',
   [KOKORO_TTS_MODEL_ID]: 'settings.voice.model.kokoro_tts',
   [FUNASR_MODEL_ID]: 'settings.voice.model.funasr',
-  [QWEN3_ASR_MODEL_ID]: 'settings.voice.model.qwen3_asr',
-  [WINDOWS_ASR_MODEL_ID]: 'settings.voice.model.windows_asr',
-  [WINDOWS_TTS_MODEL_ID]: 'settings.voice.model.windows_tts'
+  [QWEN3_ASR_MODEL_ID]: 'settings.voice.model.qwen3_asr'
 }
 
 function statusKey(status: StatusState): string {
@@ -782,6 +780,13 @@ function VoiceSettings() {
     }
   }
 
+  useEffect(() => {
+    const updates: Promise<void>[] = []
+    if (recognitionModel === REMOVED_WINDOWS_ASR_MODEL_ID) updates.push(setRecognitionPreferences({ modelId: '' }))
+    if (speechModel === REMOVED_WINDOWS_TTS_MODEL_ID) updates.push(setSpeechPreferences({ modelId: '', voiceId: '' }))
+    if (updates.length > 0) void Promise.all(updates).catch(() => setActionFailed(true))
+  }, [recognitionModel, setRecognitionPreferences, setSpeechPreferences, speechModel])
+
   const togglePreview = async () => {
     setActionFailed(false)
     setPreviewFailure(undefined)
@@ -1176,7 +1181,7 @@ function VoiceSettings() {
                   {option.label}
                 </SelectItem>
               ))}
-              {configuredSpeechModel === APPLE_TTS_MODEL_ID || configuredSpeechModel === WINDOWS_TTS_MODEL_ID ? (
+              {configuredSpeechModel === APPLE_TTS_MODEL_ID ? (
                 <>
                   <SelectSeparator />
                   <SelectItem value={SYSTEM_SETTINGS_VALUE}>{t('settings.voice.resources.open_settings')}</SelectItem>

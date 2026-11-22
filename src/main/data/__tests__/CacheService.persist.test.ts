@@ -21,6 +21,12 @@ import { application } from '@application'
 // Undo the global mock from main.setup.ts — we want the REAL CacheService.
 vi.unmock('@main/data/CacheService')
 
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  const mocked = { ...actual, renameSync: vi.fn(actual.renameSync) }
+  return { ...mocked, default: mocked }
+})
+
 // Mock lifecycle decorators so `new CacheService()` works without the container.
 const ipcListeners = new Map<string, (event: IpcMainEvent, ...args: any[]) => void>()
 const ipcHandlers = new Map<string, (event: IpcMainEvent, ...args: any[]) => unknown>()
@@ -220,6 +226,24 @@ describe('CacheService persist tier', () => {
 
     expect(() => vi.advanceTimersByTime(350)).not.toThrow() // savePersistSync swallows it
     expect(service.getPersist(PROBE)).toBe(5) // in-memory value intact
+  })
+
+  it('replaces the persist cache when rename reports EXDEV', async () => {
+    await initService()
+    const rename = vi.mocked(fs.renameSync).mockImplementationOnce(() => {
+      throw Object.assign(new Error('cross-device link not permitted'), { code: 'EXDEV' })
+    })
+
+    try {
+      service.setPersist(PROBE, 9)
+      vi.advanceTimersByTime(350)
+      expect(JSON.parse(fs.readFileSync(cacheFile, 'utf8'))[PROBE]).toBe(9)
+      expect(fs.existsSync(`${cacheFile}.tmp`)).toBe(false)
+    } finally {
+      rename.mockReset()
+      const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+      rename.mockImplementation(actual.renameSync)
+    }
   })
 
   // ---------- hasPersist: differs-from-default semantics ----------

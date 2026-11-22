@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import type * as FsPromises from 'node:fs/promises'
-import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readdir, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -17,7 +17,7 @@ import { claudeBinaryTarget, ClaudeCodeBinaryService } from '../ClaudeCodeBinary
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof FsPromises>()
-  return { ...actual, rm: vi.fn(actual.rm), mkdtemp: vi.fn(actual.mkdtemp) }
+  return { ...actual, mkdtemp: vi.fn(actual.mkdtemp), rename: vi.fn(actual.rename), rm: vi.fn(actual.rm) }
 })
 
 vi.mock('../binaryManifest', () => ({ claudeCodeBinaryManifest: { version: '1.2.3', packages: {} } }))
@@ -348,6 +348,28 @@ describe('Claude runtime acquisition', () => {
       size: Buffer.byteLength('native-cli-fixture')
     })
     expect((await readdir(runtimeRoot)).filter((name) => name.startsWith('.download-'))).toEqual([])
+  })
+
+  it('publishes the verified runtime when moving from staging fails with EXDEV', async () => {
+    const { rename: realRename } = await vi.importActual<typeof FsPromises>('node:fs/promises')
+    vi.mocked(rename)
+      .mockClear()
+      .mockImplementation(realRename)
+      .mockImplementationOnce(async () => {
+        throw Object.assign(new Error('cross-device link not permitted'), { code: 'EXDEV' })
+      })
+
+    try {
+      const executable = await service.ensureExecutable()
+      expect(service.getStatus().phase).toBe('ready')
+      expect(await readFile(executable, 'utf8')).toBe('native-cli-fixture')
+      expect(JSON.parse(await readFile(path.join(path.dirname(executable), 'installed.json'), 'utf8'))).toMatchObject({
+        size: Buffer.byteLength('native-cli-fixture')
+      })
+      expect(rename).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.mocked(rename).mockImplementation(realRename)
+    }
   })
 
   it('recovers on explicit retry in the same instance after a runtime root obstacle is removed', async () => {

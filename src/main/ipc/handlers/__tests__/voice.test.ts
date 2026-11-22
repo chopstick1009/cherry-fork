@@ -166,7 +166,7 @@ describe('Voice handlers through real IpcRouter', () => {
     expect(boundary.listTranscriptionLocales).toHaveBeenCalledWith(owner, APPLE_ASR_MODEL_ID)
   })
 
-  it.each(['local-voice::apple-system-asr', 'local-voice::windows-system-asr'])(
+  it.each(['local-voice::apple-system-asr'])(
     'dispatches a FileEntry transcription with the managed owner for %s',
     async (modelId) => {
       const webContents = { id: 10, isDestroyed: () => false }

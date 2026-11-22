@@ -43,6 +43,10 @@ const logger = loggerService.withContext('MainWindowService')
 
 // Create nativeImage for Linux window icon (required for Wayland)
 const linuxIcon = isLinux ? nativeImage.createFromPath(iconPath) : undefined
+const devWindowsIcon =
+  isWin && !app.isPackaged && process.env.CS_DEV_ICON_PATH
+    ? nativeImage.createFromPath(process.env.CS_DEV_ICON_PATH)
+    : undefined
 // Matches the renderer's main tab bar height (AppShellTabBar `h-11`).
 const MAIN_TITLE_BAR_HEIGHT = 44
 
@@ -279,6 +283,7 @@ export class MainWindowService extends BaseService {
       options: {
         darkTheme: nativeTheme.shouldUseDarkColors,
         ...(isLinux && { icon: linuxIcon }),
+        ...(devWindowsIcon && { icon: devWindowsIcon }),
         ...(this.usesTitleBarOverlay() && {
           titleBarStyle: 'hidden',
           titleBarOverlay: getTitleBarOverlay(MAIN_TITLE_BAR_HEIGHT)

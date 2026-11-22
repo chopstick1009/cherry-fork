@@ -20,7 +20,6 @@ import type { NotifyChannel } from '@main/ai/runtime/agentMcpServers'
 import { reserveClaudeBranchTx } from '@main/ai/runtime/claudeCode'
 import { reservePiBranchTx } from '@main/ai/runtime/pi/piContext'
 import { reserveDurableBranchTx } from '@main/ai/runtime/piDurable/durableContext'
-import { topicNamingService } from '@main/services/TopicNamingService'
 import { DataApiErrorFactory, ErrorCode, isDataApiError } from '@shared/data/api/errors'
 import type { AgentSessionMessageEntity } from '@shared/data/api/schemas/agentSessionMessages'
 import type { CherryMessagePart, CherryUIMessage, MessageSnapshot } from '@shared/data/types/message'
@@ -260,9 +259,6 @@ export class AgentChatContextProvider implements ChatContextProvider {
 
   activateDispatch(persisted: PersistedAgentDispatch, subscriber: StreamListener): PreparedDispatch {
     const { validated, assistantMessageId, traceId, userMessage, savedMessages } = persisted
-    if (validated.shouldAutoNameInitialTurn) {
-      topicNamingService.maybeRenameAgentSessionFromFirstUserMessage(validated.sessionId, userMessage.data)
-    }
 
     const turnTrace = startAiChildTurnSpan(
       'ai.turn',

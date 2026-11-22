@@ -92,7 +92,7 @@ import {
   getSidebarShortcutResourceIds,
   SIDEBAR_SHORTCUT_PROVIDER_IDS
 } from '@renderer/utils/sidebar'
-import { isProtectedBuiltinAgentRole } from '@shared/ai/builtinAgent'
+import { isDeletionProtectedBuiltinAgentRole, isProtectedBuiltinAgentRole } from '@shared/ai/builtinAgent'
 import { classifyTurn } from '@shared/ai/transport'
 import type { OrderRequest } from '@shared/data/api/schemas/_endpointHelpers'
 import type { AgentSessionEntity } from '@shared/data/api/schemas/agentSessions'
@@ -1348,7 +1348,7 @@ const Sessions = ({
                 agentId={agentGroupId}
                 assistantIconType={assistantIconType}
                 deleteAgentDisabled={deletingAgentId !== null}
-                deleteSessionsOnly={isProtectedBuiltinAgentRole(
+                deleteSessionsOnly={isDeletionProtectedBuiltinAgentRole(
                   agentById.get(agentGroupId)?.configuration?.builtin_role
                 )}
                 pinDisabled={isAgentPinActionDisabled}
@@ -1535,7 +1535,7 @@ const Sessions = ({
           agentId,
           assistantIconType,
           deleteAgentDisabled: deletingAgentId !== null,
-          deleteSessionsOnly: isProtectedBuiltinAgentRole(agentById.get(agentId)?.configuration?.builtin_role),
+          deleteSessionsOnly: isDeletionProtectedBuiltinAgentRole(agentById.get(agentId)?.configuration?.builtin_role),
           onArchiveSessions: handleArchiveSessions,
           onDeleteAgent: handleDeleteAgent,
           onPermanentDeleteAgent: isAgentGroupPermanentDeleteEligible(agentId) ? handlePermanentDeleteAgent : undefined,

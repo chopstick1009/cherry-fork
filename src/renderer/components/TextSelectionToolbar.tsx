@@ -1,8 +1,11 @@
-import { Copy, NotebookPen, Quote } from 'lucide-react'
+import { Copy, Lightbulb, MessagesSquare, NotebookPen, Quote, Underline } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button, Popover, PopoverAnchor, PopoverContent } from '@cherrystudio/ui'
+import type { AnnotationKind } from '@shared/data/types/annotation'
+
+import { useOptionalMessageAnnotations } from './chat/messages/annotations/MessageAnnotationsContext'
 
 interface TextSelectionToolbarProps {
   children: ReactNode
@@ -23,9 +26,11 @@ export function TextSelectionToolbar({
   isSavingNote
 }: TextSelectionToolbarProps) {
   const { t } = useTranslation()
+  const annotations = useOptionalMessageAnnotations()
   const scopeRef = useRef<HTMLDivElement>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const [anchor, setAnchor] = useState<DOMRect | null>(null)
+  const canAnnotateSelection = annotations?.canAnnotateSelection(window.getSelection(), scopeRef.current) ?? false
   const virtualRef = useMemo(() => ({ current: { getBoundingClientRect: () => anchor ?? new DOMRect() } }), [anchor])
 
   useEffect(() => {
@@ -151,6 +156,10 @@ export function TextSelectionToolbar({
     setAnchor(null)
   }
 
+  const runAnnotationAction = (kind: AnnotationKind) => {
+    runAction((selection) => annotations?.createFromSelection(kind, selection, scopeRef.current))
+  }
+
   return (
     <div ref={scopeRef} className="contents" data-selection-actions-scope>
       {children}
@@ -184,6 +193,40 @@ export function TextSelectionToolbar({
               <NotebookPen aria-hidden="true" />
               {t('notes.save')}
             </Button>
+            {annotations && canAnnotateSelection && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('webview.annotation.underline')}
+                  disabled={annotations.isMutating}
+                  onClick={() => runAnnotationAction('underline')}>
+                  <Underline aria-hidden="true" />
+                  {t('webview.annotation.underline')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('webview.annotation.thought')}
+                  disabled={annotations.isMutating}
+                  onClick={() => runAnnotationAction('thought')}>
+                  <Lightbulb aria-hidden="true" />
+                  {t('webview.annotation.thought')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('webview.annotation.followup')}
+                  disabled={annotations.isMutating}
+                  onClick={() => runAnnotationAction('followup')}>
+                  <MessagesSquare aria-hidden="true" />
+                  {t('webview.annotation.followup')}
+                </Button>
+              </>
+            )}
           </PopoverContent>
         )}
       </Popover>

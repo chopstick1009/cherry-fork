@@ -28,11 +28,11 @@ export function UserAvatar({ user, className }: { user: SidebarUser; className?:
 
   return (
     <div className={`relative ${className ?? ''}`}>
-      <div className="h-full w-full overflow-hidden rounded-full">
+      <div className="h-full w-full overflow-hidden rounded-[6px]">
         {user.avatar && !isTextAvatar(user.avatar) ? (
           <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
         ) : isEmojiAvatar ? (
-          <EmojiIcon emoji={user.avatar!} fluid />
+          <EmojiIcon emoji={user.avatar!} fluid className="!rounded-[6px]" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-400 to-indigo-500 text-[10px] text-white">
             {getUserAvatarFallback(user)}

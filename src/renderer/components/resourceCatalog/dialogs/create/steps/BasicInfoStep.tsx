@@ -10,7 +10,12 @@ import {
   FormMessage,
   InputGroup,
   InputGroupAddon,
-  InputGroupInput
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@cherrystudio/ui'
 import type { ModelSelectorFilter } from '@renderer/components/ModelSelector'
 import { PermissionModeSelect } from '@renderer/components/PermissionModeOption'
@@ -21,6 +26,7 @@ import {
   TextInputField
 } from '@renderer/components/resourceCatalog/dialogs/components/EditDialogShared'
 import { getPermissionModeCards } from '@renderer/utils/agent'
+import { AGENT_RUNTIME_CAPABILITIES } from '@shared/ai/agentRuntimeCapabilities'
 
 import { DraftAgentAvatarPicker } from '../DraftAgentAvatarPicker'
 import type { ResourceCreateWizardFormValues } from '../types'
@@ -71,6 +77,35 @@ function AgentRuntimeModelFields({
 
   return (
     <>
+      <FormField
+        control={form.control}
+        name="agentType"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-medium">{t('library.config.agent.field.runtime.label')}</FormLabel>
+            <Select
+              value={field.value}
+              onValueChange={(value) => {
+                const agentType = value as typeof field.value
+                field.onChange(agentType)
+                form.setValue('permissionMode', AGENT_RUNTIME_CAPABILITIES[agentType].createDefaults.permissionMode)
+                form.setValue('modelId', null)
+              }}>
+              <SelectTrigger aria-label={t('library.config.agent.field.runtime.label')} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent portalContainer={portalContainer}>
+                {(['pi-durable', 'claude-code'] as const).map((agentType) => (
+                  <SelectItem key={agentType} value={agentType}>
+                    {t(AGENT_RUNTIME_CAPABILITIES[agentType].labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       <FormField
         control={form.control}
         name="permissionMode"

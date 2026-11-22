@@ -6,8 +6,6 @@ import {
   FUNASR_MODEL_ID,
   QWEN3_TTS_MODEL_ID,
   TranscriptionLanguageSource,
-  WINDOWS_ASR_MODEL_ID,
-  WINDOWS_TTS_MODEL_ID,
   VoiceModelSupport
 } from '@shared/ai/localVoice'
 
@@ -15,7 +13,6 @@ import { resolveSpeechConfiguration, resolveTranscriptionConfiguration } from '.
 import { appleSpeechDefinition, appleTranscriptionDefinition } from '../localAdapters/apple'
 import { funAsrTranscriptionDefinition } from '../localAdapters/funasr'
 import { qwen3SpeechDefinition } from '../localAdapters/qwen3Tts'
-import { windowsSpeechDefinition, windowsTranscriptionDefinition } from '../localAdapters/windows'
 import { VoiceRuntimeError } from '../VoiceRuntimeError'
 
 const mac = { platform: 'darwin', arch: 'arm64', majorVersion: 26 }
@@ -51,17 +48,6 @@ describe('voice product defaults', () => {
     ).toMatchObject({
       modelId: APPLE_ASR_MODEL_ID,
       status: { status: 'not_installed', reason: 'asset_required' }
-    })
-  })
-
-  it('prefers ready Windows system recognition without requiring a model download', async () => {
-    vi.spyOn(windowsTranscriptionDefinition, 'status').mockResolvedValue({ status: 'ready' })
-    expect(
-      await resolveTranscriptionConfiguration({ language }, undefined, { platform: 'win32', arch: 'x64' })
-    ).toMatchObject({
-      modelId: WINDOWS_ASR_MODEL_ID,
-      language: { source: TranscriptionLanguageSource.Explicit, locale: 'zh-CN' },
-      status: { status: 'ready' }
     })
   })
 
@@ -136,10 +122,10 @@ describe('voice product defaults', () => {
     }
   )
 
-  it.each([
-    [mac, appleSpeechDefinition, APPLE_TTS_MODEL_ID],
-    [{ platform: 'win32', arch: 'x64' }, windowsSpeechDefinition, WINDOWS_TTS_MODEL_ID]
-  ])('matches language tags without regard to case on %j', async (environment, definition, modelId) => {
+  it('matches voice language tags without regard to case', async () => {
+    const environment = mac
+    const definition = appleSpeechDefinition
+    const modelId = APPLE_TTS_MODEL_ID
     vi.spyOn(definition, 'voices').mockResolvedValue([{ id: 'english', name: 'English', locale: 'en-US' }])
     vi.spyOn(definition, 'getDefaultVoice').mockResolvedValue({ id: 'english', name: 'English', locale: 'en-US' })
     vi.spyOn(definition, 'status').mockResolvedValue({ status: 'ready' })

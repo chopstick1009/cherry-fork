@@ -14,6 +14,7 @@ import type { MultiModelMessageStyle } from '@shared/data/preference/preferenceT
 import type { CherryMessagePart } from '@shared/data/types/message'
 
 import NarrowLayout from '../layout/NarrowLayout'
+import { MessageAnnotationsProvider } from './annotations/MessageAnnotationsContext'
 import { PartsProvider, usePartsMap } from './blocks/MessagePartsContext'
 import { MessageListInitialLoading } from './layout/MessageListLoading'
 import { MessagesContainer } from './layout/shared'
@@ -779,78 +780,80 @@ const MessageList = ({ enableSearch = false, scrollPositionKey }: MessageListPro
           scopeRef={messageListScopeRef}
         />
       )}
-      <SelectionContextMenu openBrowserUrl={actions.openBrowserUrl}>
-        <div ref={messageListScopeRef} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <MessageVirtualList
-            handleRef={messageListRef}
-            items={listItems}
-            getItemKey={(item) => (Array.isArray(item) ? item[0] : item.key)}
-            estimateSize={data.estimateSize}
-            overscan={data.overscan}
-            topPadding={topPadding}
-            bottomPadding={bottomPadding}
-            keepMountedKeys={afterMessages ? [...keepMountedKeys, AFTER_MESSAGES.key] : keepMountedKeys}
-            showScrollToBottomButton
-            scrollToBottomButtonBottomOffset={Math.max(24, bottomPadding)}
-            topicId={scrollPositionKey ?? topic.id}
-            hasMoreTop={hasOlder}
-            onScrollContainerReady={handleScrollContainerReady}
-            onReachTop={loadMoreMessages}
-            renderItem={(item, index) => {
-              if (!Array.isArray(item)) {
-                return (
-                  <NarrowLayout
-                    narrowMode={messageListNarrowMode}
-                    withSidePadding
-                    style={{
-                      paddingLeft: sidePaddingPx + railGutterPx,
-                      paddingRight: sidePaddingPx + messageEndInsetPx + railGutterPx
-                    }}>
-                    {afterMessages}
-                  </NarrowLayout>
-                )
-              }
-              const [key, groupMessages] = item
-              const groupMessageTail =
-                messageTail && groupMessages.some((message) => message.id === messageTail.messageId)
-                  ? messageTail
-                  : undefined
-              const props: MessageGroupLayerProps = {
-                groupKey: key,
-                isLive: index >= firstLiveGroupIndex,
-                narrowMode: messageListNarrowMode,
-                railGutterPx,
-                sidePaddingPx,
-                messageEndInsetPx,
-                isLatestAssistantGroup: key === latestAssistantGroupKey,
-                directAssistantModelsByUserId,
-                messageTail: groupMessageTail,
-                messages: groupMessages,
-                partsByMessageId:
-                  index < firstLiveGroupIndex && streamingLayers
-                    ? streamingLayers.historyPartsByMessageId
-                    : partsByMessageId,
-                registerMessageElement,
-                onMultiModelMessageStyleChange: (style) => {
-                  setGroupLayoutOverrides((current) =>
-                    current[key] === style ? current : { ...current, [key]: style }
+      <MessageAnnotationsProvider topicId={topic.id}>
+        <SelectionContextMenu openBrowserUrl={actions.openBrowserUrl}>
+          <div ref={messageListScopeRef} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <MessageVirtualList
+              handleRef={messageListRef}
+              items={listItems}
+              getItemKey={(item) => (Array.isArray(item) ? item[0] : item.key)}
+              estimateSize={data.estimateSize}
+              overscan={data.overscan}
+              topPadding={topPadding}
+              bottomPadding={bottomPadding}
+              keepMountedKeys={afterMessages ? [...keepMountedKeys, AFTER_MESSAGES.key] : keepMountedKeys}
+              showScrollToBottomButton
+              scrollToBottomButtonBottomOffset={Math.max(24, bottomPadding)}
+              topicId={scrollPositionKey ?? topic.id}
+              hasMoreTop={hasOlder}
+              onScrollContainerReady={handleScrollContainerReady}
+              onReachTop={loadMoreMessages}
+              renderItem={(item, index) => {
+                if (!Array.isArray(item)) {
+                  return (
+                    <NarrowLayout
+                      narrowMode={messageListNarrowMode}
+                      withSidePadding
+                      style={{
+                        paddingLeft: sidePaddingPx + railGutterPx,
+                        paddingRight: sidePaddingPx + messageEndInsetPx + railGutterPx
+                      }}>
+                      {afterMessages}
+                    </NarrowLayout>
                   )
                 }
-              }
+                const [key, groupMessages] = item
+                const groupMessageTail =
+                  messageTail && groupMessages.some((message) => message.id === messageTail.messageId)
+                    ? messageTail
+                    : undefined
+                const props: MessageGroupLayerProps = {
+                  groupKey: key,
+                  isLive: index >= firstLiveGroupIndex,
+                  narrowMode: messageListNarrowMode,
+                  railGutterPx,
+                  sidePaddingPx,
+                  messageEndInsetPx,
+                  isLatestAssistantGroup: key === latestAssistantGroupKey,
+                  directAssistantModelsByUserId,
+                  messageTail: groupMessageTail,
+                  messages: groupMessages,
+                  partsByMessageId:
+                    index < firstLiveGroupIndex && streamingLayers
+                      ? streamingLayers.historyPartsByMessageId
+                      : partsByMessageId,
+                  registerMessageElement,
+                  onMultiModelMessageStyleChange: (style) => {
+                    setGroupLayoutOverrides((current) =>
+                      current[key] === style ? current : { ...current, [key]: style }
+                    )
+                  }
+                }
 
-              return <MessageLayer {...props} />
-            }}
-            style={{ flex: 1, minHeight: 0, marginBottom: scrollerBottomMargin }}
-          />
-          {isLoadingMore && (
-            <div
-              className="pointer-events-none flex w-full justify-center py-2.5"
-              style={{ background: 'var(--background)' }}>
-              <LoadingIcon color="var(--muted-foreground)" />
-            </div>
-          )}
-        </div>
-      </SelectionContextMenu>
+                return <MessageLayer {...props} />
+              }}
+              style={{ flex: 1, minHeight: 0, marginBottom: scrollerBottomMargin }}
+            />
+            {isLoadingMore && (
+              <div
+                className="pointer-events-none flex w-full justify-center py-2.5"
+                style={{ background: 'var(--background)' }}>
+                <LoadingIcon color="var(--muted-foreground)" />
+              </div>
+            )}
+          </div>
+        </SelectionContextMenu>
+      </MessageAnnotationsProvider>
       {topicImageCaptureActions.length > 0 && (
         <div
           ref={topicImageCaptureRef}

@@ -25,6 +25,7 @@ import type { AgentSessionMessageSchemas } from './agentSessionMessages'
 import type { AgentSessionSchemas } from './agentSessions'
 import type { AgentWorkspaceSchemas } from './agentWorkspaces'
 import type { AiUsageRecordSchemas } from './aiUsageRecords'
+import type { AnnotationSchemas } from './annotations'
 import type { ApiGatewayPairedDeviceSchemas } from './apiGatewayPairedDevices'
 import type { ArchiveSchemas } from './archives'
 import type { AssistantSchemas } from './assistants'
@@ -92,5 +93,6 @@ export type ApiSchemas = AssertValidSchemas<
     JobSchemas &
     SearchSchemas &
     DiagnosticReportSchemas &
-    AiUsageRecordSchemas
+    AiUsageRecordSchemas &
+    AnnotationSchemas
 >

@@ -440,7 +440,13 @@ class PreparedAtomicWriteImpl implements PreparedAtomicWrite {
       } finally {
         await fd.close()
       }
-      await rename(this.tmp, this.target)
+      try {
+        await rename(this.tmp, this.target)
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err
+        await fsCopyFile(this.tmp, this.target)
+        await unlink(this.tmp)
+      }
     } catch (err) {
       await bestEffortUnlinkTmp(this.tmp)
       this.currentState = 'aborted'

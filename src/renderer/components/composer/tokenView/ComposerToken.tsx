@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, NormalTooltip, Popover, PopoverContent, PopoverTrigger, ScrollArea } from '@cherrystudio/ui'
 import { cn } from '@cherrystudio/ui/lib/utils'
 import {
+  QUOTE_TOOLTIP_FULL_BODY_CLASS_NAME,
   getQuoteTooltipContent,
   QUOTE_TOOLTIP_BODY_CLASS_NAME,
   QUOTE_TOOLTIP_CONTENT_CLASS_NAME
@@ -106,6 +107,7 @@ const tokenIconByKind: Record<ChatInputTokenKind, ReactNode> = {
 /** Glyphs a producer can name in a token's persisted `icon`; any other value (an emoji) renders as text. */
 const namedTokenIcons: Record<string, ReactNode> = {
   comment: <MessageSquareText className={tokenIconClassName} />,
+  messages: <MessagesSquare className={tokenIconClassName} />,
   quote: <TextQuote className={tokenIconClassName} />
 }
 
@@ -182,7 +184,6 @@ function InlineTokenRemoveButton({
       variant="ghost"
       size="icon"
       aria-label={label}
-      title={label}
       data-composer-token-remove=""
       className={cn(
         'pointer-events-none absolute inset-0 size-auto min-h-0 border-0 bg-transparent p-0 text-[length:inherit] leading-none text-current opacity-0 transition-opacity dark:text-current',
@@ -1101,7 +1102,14 @@ export function QuoteComposerToken(props: ComposerTokenProps) {
 
   return (
     <NormalTooltip
-      content={<div className={QUOTE_TOOLTIP_BODY_CLASS_NAME}>{quoteTooltipContent}</div>}
+      content={
+        <div
+          className={
+            props.token.icon === 'messages' ? QUOTE_TOOLTIP_FULL_BODY_CLASS_NAME : QUOTE_TOOLTIP_BODY_CLASS_NAME
+          }>
+          {quoteTooltipContent}
+        </div>
+      }
       side="top"
       sideOffset={6}
       delayDuration={300}

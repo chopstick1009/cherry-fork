@@ -130,10 +130,10 @@ export function ChatConversationControls({
         src={assistantAvatarSrc}
         alt=""
         size={20}
-        className="shrink-0 rounded-full object-cover"
+        className="shrink-0 rounded-[6px] object-cover"
         fallback={
           assistantIcon ? (
-            <EmojiIcon emoji={assistantIcon} size={20} />
+            <EmojiIcon emoji={assistantIcon} size={20} className="!rounded-[6px]" />
           ) : iconOnly ? (
             <Bot size={16} aria-hidden />
           ) : null

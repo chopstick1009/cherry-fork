@@ -244,6 +244,7 @@ vi.mock('@renderer/services/EventService', () => ({
   EVENT_NAMES: {
     ADD_CHAT_COMPOSER_IMAGE_REFERENCE: 'ADD_CHAT_COMPOSER_IMAGE_REFERENCE',
     FOCUS_CHAT_COMPOSER: 'FOCUS_CHAT_COMPOSER',
+    IMPORT_MESSAGE_FOLLOWUPS: 'IMPORT_MESSAGE_FOLLOWUPS',
     LOCATE_MESSAGE: 'LOCATE_MESSAGE',
     SEND_MESSAGE: 'SEND_MESSAGE'
   },
@@ -1418,6 +1419,70 @@ describe('ChatComposer', () => {
       mocks.eventListeners.get('FOCUS_CHAT_COMPOSER')?.({ topicId: 'topic-1' })
     })
     expect(mocks.focusComposer).toHaveBeenCalledTimes(1)
+  })
+
+  it('imports every matching follow-up as a quote token without sending the draft', async () => {
+    const send = vi.fn()
+    const existingToken: ComposerSerializedToken = {
+      id: 'existing-token',
+      kind: 'quote',
+      label: 'Existing quote',
+      promptText: '<blockquote>existing</blockquote>',
+      index: 0,
+      textOffset: 0
+    }
+    mocks.getDraft.mockReturnValue({ text: 'Keep this draft', tokens: [existingToken] })
+    render(<ChatComposer topic={topic} onSend={send} />)
+
+    const importFollowups = mocks.eventListeners.get('IMPORT_MESSAGE_FOLLOWUPS')
+    expect(importFollowups).toBeDefined()
+    act(() =>
+      importFollowups?.({
+        topicId: topic.id,
+        messageSeq: 4,
+        turn: 2,
+        annotations: [
+          {
+            id: 'annotation-a',
+            kind: 'followup',
+            role: 'assistant',
+            messageId: 'message-4',
+            start: 2,
+            end: 7,
+            exact: 'first',
+            content: 'Question A'
+          },
+          {
+            id: 'annotation-b',
+            kind: 'followup',
+            role: 'assistant',
+            messageId: 'message-4',
+            start: 8,
+            end: 13,
+            exact: 'second',
+            content: 'Question B'
+          },
+          { id: 'not-followup', kind: 'thought', exact: 'ignored', content: 'ignored' }
+        ]
+      })
+    )
+
+    const [draft] = mocks.replaceDraft.mock.calls.at(-1)!
+    expect(draft.text.startsWith('Keep this draft\n\n')).toBe(true)
+    expect(draft.tokens[0]).toEqual(existingToken)
+    expect(draft.tokens.slice(1)).toHaveLength(2)
+    expect(draft.tokens.slice(1).map((token) => token.kind)).toEqual(['quote', 'quote'])
+    expect(draft.tokens.slice(1).map((token) => token.icon)).toEqual(['messages', 'messages'])
+    expect(draft.tokens.slice(1).map((token) => token.label)).toEqual(['first', 'second'])
+    expect(draft.tokens[1].description).toContain('轮次=2')
+    expect(draft.tokens[1].description).toContain('Question A')
+    expect(draft.tokens[1].textOffset).toBe('Keep this draft\n\n'.length)
+    expect(draft.tokens[2].textOffset).toBeGreaterThan(draft.tokens[1].textOffset)
+    expect(draft.text).toContain('消息序号=4')
+    expect(draft.text).toContain('Question A')
+    expect(draft.text).toContain('Question B')
+    expect(mocks.focusComposer).toHaveBeenCalledWith('end')
+    expect(send).not.toHaveBeenCalled()
   })
 
   it('adds a generated image reference only to its matching image-capable topic composer', async () => {

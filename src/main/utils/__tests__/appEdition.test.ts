@@ -104,4 +104,12 @@ describe('getAppEdition', () => {
       expect(getApplicationId()).toBe(applicationIds[edition])
     }
   })
+
+  it('uses an explicit app ID for a fork package', async () => {
+    setPackaged(true)
+    readFileSyncMock.mockReturnValue(JSON.stringify({ cherryEdition: 'global', cherryAppId: 'com.example.CherryDev' }))
+
+    const getApplicationId = await loadGetApplicationId()
+    expect(getApplicationId()).toBe('com.example.CherryDev')
+  })
 })

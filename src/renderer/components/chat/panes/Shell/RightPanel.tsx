@@ -1,11 +1,10 @@
-import { Maximize2, Minimize2 } from 'lucide-react'
+import { Maximize2, Minimize2, Notebook } from 'lucide-react'
 import type { ComponentProps, ComponentType, MouseEvent, ReactNode } from 'react'
 import { Activity, createContext, use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Tooltip, TooltipSurface } from '@cherrystudio/ui'
 import { ErrorBoundary } from '@renderer/components/ErrorBoundary'
-import { RightSidebarCollapseIcon } from '@renderer/components/icons/SidebarToggleIcons'
 import NavbarIcon from '@renderer/components/NavbarIcon'
 import { useCommandHandler } from '@renderer/hooks/command'
 import { useIsActiveTab } from '@renderer/hooks/tab'
@@ -466,7 +465,7 @@ export function RightPanelHeaderControls({ canMaximize = false }: { canMaximize?
           origin. Unmounting the tooltip as the panel closes removes that window. */}
       <Tooltip content={closeLabel} delay={800} isDisabled={!state.presentationOpen}>
         <NavbarIcon tone="conversation" aria-label={closeLabel} onClick={actions.close}>
-          <RightSidebarCollapseIcon />
+          <Notebook aria-hidden="true" />
         </NavbarIcon>
       </Tooltip>
     </div>

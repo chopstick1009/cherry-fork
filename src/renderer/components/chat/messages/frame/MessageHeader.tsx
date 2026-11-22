@@ -196,7 +196,7 @@ const MessageHeader: FC<Props> = memo(
             {isAssistantMessage && showModelIdentity && displayModelName && (
               <span className="text-foreground-tertiary flex min-w-0 shrink items-center gap-1 text-xs leading-5">
                 <span aria-hidden="true" className="shrink-0">
-                  <ModelAvatar className="rounded-full" model={displayModel} size={16} />
+                  <ModelAvatar className="rounded-[4px]" model={displayModel} size={16} />
                 </span>
                 <span className="truncate">{displayModelName}</span>
               </span>

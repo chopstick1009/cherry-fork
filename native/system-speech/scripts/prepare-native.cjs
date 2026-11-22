@@ -16,27 +16,19 @@ function prepareNativeHelper({
   packageRoot = resolve(__dirname, '..'),
   build = buildNativeHelper
 } = {}) {
-  if (!(platform === 'win32' && arch === 'x64') && !(platform === 'darwin' && ['arm64', 'x64'].includes(arch)))
-    return null
+  if (!(platform === 'darwin' && ['arm64', 'x64'].includes(arch))) return null
 
-  const helperPath = join(
-    packageRoot,
-    'dist',
-    'native',
-    `${platform}-${arch}`,
-    platform === 'win32' ? 'cherry-system-speech.exe' : 'cherry-system-speech'
-  )
+  const helperPath = join(packageRoot, 'dist', 'native', `${platform}-${arch}`, 'cherry-system-speech')
   const sources = [
     join(packageRoot, 'scripts', 'build-native.cjs'),
-    ...(platform === 'win32'
-      ? [join(packageRoot, 'windows', 'SystemSpeechHelper.cpp'), join(packageRoot, 'windows', 'build.cmd')]
-      : [join(packageRoot, 'native', 'Package.swift'), ...swiftSources(join(packageRoot, 'native', 'Sources'))])
+    join(packageRoot, 'native', 'Package.swift'),
+    ...swiftSources(join(packageRoot, 'native', 'Sources'))
   ]
   const helper = statSync(helperPath, { throwIfNoEntry: false })
   if (
     helper?.isFile() &&
     helper.size > 0 &&
-    (platform === 'win32' || (helper.mode & 0o100) !== 0) &&
+    (process.platform !== 'darwin' || (helper.mode & 0o100) !== 0) &&
     sources.every((file) => statSync(file).mtimeMs <= helper.mtimeMs)
   )
     return { helperPath, rebuilt: false }

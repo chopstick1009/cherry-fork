@@ -20,7 +20,6 @@ import { pipeMessageStream } from '@main/ai/streamManager/pipeMessageStream'
 import type { StreamDoneResult, StreamPausedResult } from '@main/ai/streamManager/types'
 import { toolApprovalRegistry } from '@main/ai/toolApproval/ToolApprovalRegistry'
 import { BaseService } from '@main/core/lifecycle/BaseService'
-import { topicNamingService } from '@main/services/TopicNamingService'
 import type { CherryUIMessage } from '@shared/data/types/message'
 import { AsyncEventQueue } from '@shared/utils/async'
 
@@ -882,9 +881,6 @@ it('retains a reserved steer reply until its stream takes ownership', async () =
 
 // A closed stream's snapshot must not overwrite updates arriving before the synchronous DB commit.
 it('hands late source changes from an open stream to terminal persistence and idle history', async () => {
-  const naming = Promise.withResolvers<void>()
-  const rename = vi.spyOn(topicNamingService, 'maybeRenameAgentSession').mockReturnValue(naming.promise)
-  onTestFinished(() => naming.resolve())
   const f = await fixture()
   await f.project([text('a', 'A'), text('b', 'B')])
   await vi.waitFor(() => expect(f.views.at(-1)?.parts).toHaveLength(2))
@@ -897,7 +893,6 @@ it('hands late source changes from an open stream to terminal persistence and id
   expect(messages.getSessionMessage('root', f.reply.id).data.parts).toEqual(text('', 'B before commit').parts)
   await f.project([text('b', 'B after commit')], { live: [], refresh: ['b'] })
   await persistence
-  expect(rename).toHaveBeenCalledOnce()
   expect(messages.getSessionMessage('root', f.reply.id).data.parts).toEqual(text('', 'B after commit').parts)
   await f.handle.listeners[1].onDone(result)
   expect(f.service.inspect('root')?.status).toBe('idle')

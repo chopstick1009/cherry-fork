@@ -38,6 +38,7 @@ beforeEach(() => {
 
 afterEach(() => {
   packagedState.value = false
+  vi.unstubAllEnvs()
   vi.unstubAllGlobals()
 })
 
@@ -126,8 +127,6 @@ describe('buildPathRegistry', () => {
   })
 
   it.each([
-    ['win32', 'x64', false, '/mock/app/native/system-speech/dist/native/win32-x64/cherry-system-speech.exe'],
-    ['win32', 'x64', true, '/mock/resources/system-speech/cherry-system-speech.exe'],
     ['darwin', 'arm64', false, '/mock/app/native/system-speech/dist/native/darwin-arm64/cherry-system-speech'],
     ['darwin', 'x64', true, '/mock/Cherry Studio.app/Contents/Helpers/cherry-system-speech'],
     ['darwin', 'arm64', true, '/mock/Cherry Studio.app/Contents/Helpers/cherry-system-speech']
@@ -214,6 +213,19 @@ describe('buildPathRegistry', () => {
     expect(registry['feature.binary.data']).toBe(miseRoot)
     expect(registry['feature.binary.data.isolated.localappdata']).toBe(path.join(miseRoot, 'localappdata'))
     expect(registry['feature.binary.data.isolated.appdata']).toBe(path.join(miseRoot, 'appdata'))
+  })
+
+  it('allows a development-only Claude runtime directory override', () => {
+    const runtimeDir = path.join(os.tmpdir(), 'cherry-claude-runtime')
+    vi.stubEnv('CS_DEV_CLAUDE_CODE_BINARY_DIR', runtimeDir)
+
+    expect(buildPathRegistry()['feature.claude_code.binary']).toBe(runtimeDir)
+  })
+
+  it('rejects a relative development Claude runtime directory override', () => {
+    vi.stubEnv('CS_DEV_CLAUDE_CODE_BINARY_DIR', '.context/claude-runtime')
+
+    expect(() => buildPathRegistry()).toThrow('CS_DEV_CLAUDE_CODE_BINARY_DIR must be an absolute path.')
   })
 
   it('keeps the uv cache under Cherry home', () => {

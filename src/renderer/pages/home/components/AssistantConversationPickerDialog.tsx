@@ -70,12 +70,12 @@ export function AssistantConversationPickerDialog({
           <AssistantAvatarImage
             src={assistant.avatarSrc}
             alt={assistant.name}
-            className="size-6 rounded-full object-cover"
+            className="size-6 rounded-[6px] object-cover"
             fallback={
               assistant.emoji ? (
-                <EmojiIcon emoji={assistant.emoji} size={24} />
+                <EmojiIcon emoji={assistant.emoji} size={24} className="!rounded-[6px]" />
               ) : (
-                <span className="flex size-6 items-center justify-center rounded-full bg-sidebar-accent">
+                <span className="flex size-6 items-center justify-center rounded-[6px] bg-sidebar-accent">
                   <Bot size={14} />
                 </span>
               )

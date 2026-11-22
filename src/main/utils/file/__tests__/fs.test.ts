@@ -10,6 +10,7 @@ import {
   utimes,
   writeFile
 } from 'node:fs/promises'
+import type * as FsPromises from 'node:fs/promises'
 import type { Server } from 'node:http'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -46,6 +47,11 @@ import {
   stat,
   write as fsWrite
 } from '../fs'
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof FsPromises>()
+  return { ...actual, rename: vi.fn(actual.rename) }
+})
 
 describe('stat', () => {
   let tmp: string
@@ -534,6 +540,25 @@ describe('PreparedAtomicWrite', () => {
     expect(Array.from(await readFile(target))).toEqual(Array.from(bytes))
     await expect(prepared.commit()).resolves.toEqual(firstVersion)
     await expect(prepared.abort()).resolves.toBeUndefined()
+  })
+
+  it('commits prepared bytes when rename reports EXDEV', async () => {
+    const target = path.join(tmp, 'cross-device.txt') as AbsoluteFilePath
+    const prepared = await prepareAtomicWrite(target, 'uploaded avatar')
+    const { rename: realRename } = await vi.importActual<typeof FsPromises>('node:fs/promises')
+    const rename = vi.mocked((await import('node:fs/promises')).rename)
+    rename.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('cross-device link not permitted'), { code: 'EXDEV' })
+    })
+
+    try {
+      await prepared.commit()
+      expect(prepared.state).toBe('committed')
+      expect(await readFile(target, 'utf-8')).toBe('uploaded avatar')
+      expect((await readdir(tmp)).filter((entry) => entry.includes('.tmp-'))).toEqual([])
+    } finally {
+      rename.mockImplementation(realRename)
+    }
   })
 
   it('aborts idempotently without replacing the target and cannot commit afterward', async () => {

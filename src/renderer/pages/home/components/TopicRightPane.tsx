@@ -1,12 +1,25 @@
-import { Activity, GitBranch, Globe } from 'lucide-react'
+import dayjs from 'dayjs'
+import { Activity, GitBranch, Globe, MessagesSquare, Notebook, Send } from 'lucide-react'
 import type { PropsWithChildren } from 'react'
-import { createContext, lazy, Suspense, use, useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  createContext,
+  lazy,
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { NormalTooltip } from '@cherrystudio/ui'
 import type { TopicMessageFlowLiveState } from '@renderer/components/chat/flow'
+import { getLatestAssistantFollowups } from '@renderer/components/chat/messages/annotations/annotationFollowups'
 import {
   createResourcePaneCapability,
-  RESOURCE_PANE_TAB,
   type ResourcePaneConfig,
   ResourcePaneLocateOpener,
   type RightPanelCapability,
@@ -22,9 +35,12 @@ import {
 } from '@renderer/components/chat/panes/Shell'
 import type { ResourceListRevealRequest } from '@renderer/components/chat/resourceList/base'
 import { SessionBrowserView } from '@renderer/components/SessionBrowserView'
+import { useQuery } from '@renderer/data/hooks/useDataApi'
 import { usePreference } from '@renderer/data/hooks/usePreference'
 import { useIpcOn } from '@renderer/ipc'
 import { topicBrowserRuntimeService as browserRuntime } from '@renderer/services/AgentBrowserRuntimeService'
+import { EVENT_NAMES, EventEmitter } from '@renderer/services/EventService'
+import type { Annotation } from '@shared/data/types/annotation'
 import { WebviewSecurityProfile } from '@shared/utils/webviewSecurity'
 
 const TopicBranchPanel = lazy(() => import('./TopicBranchPanel'))
@@ -45,6 +61,7 @@ interface TopicRightPaneViewportCallbacks {
 }
 
 interface TopicRightPanelScope extends TopicRightPaneMeta {
+  annotationTitle: string
   browserTitle: string
   branchTitle: string
   developerMode: boolean
@@ -99,6 +116,15 @@ function createTopicBranchLiveStateStore(): TopicBranchLiveStateStore {
 const TopicBranchLiveStateStoreContext = createContext<TopicBranchLiveStateStore | null>(null)
 type TopicRightPaneViewportValue = TopicRightPaneViewportCallbacks & { branchOpenCycle: number }
 const TopicRightPaneViewportContext = createContext<TopicRightPaneViewportValue | null>(null)
+interface TopicAnnotationPaneState {
+  selectedId: string | null
+  latestAssistantMessageId: string | null
+  latestAssistantMessageSeq: number
+  latestAssistantTurn: number
+  select: (id: string | null) => void
+  setLatestAssistant: (id: string | null, messageSeq: number, turn: number) => void
+}
+const TopicAnnotationPaneContext = createContext<TopicAnnotationPaneState | null>(null)
 function useTopicBranchLiveStateStore(): TopicBranchLiveStateStore {
   const store = use(TopicBranchLiveStateStoreContext)
   if (!store) throw new Error('useTopicBranchLiveStateStore must be used within <TopicRightPane.Scope>')
@@ -147,6 +173,136 @@ function TopicBranchRightPanel({ active, scope }: RightPanelComponentProps<Topic
   )
 }
 
+function TopicAnnotationRightPanel({ scope }: RightPanelComponentProps<TopicRightPanelScope>) {
+  const { t } = useTranslation()
+  const state = use(TopicAnnotationPaneContext)
+  const { data } = useQuery('/topics/:topicId/annotations', {
+    enabled: !!scope.topicId,
+    params: { topicId: scope.topicId ?? '' }
+  })
+  const annotations = useMemo(() => (Array.isArray(data) ? data : []), [data])
+  const latestFollowups = getLatestAssistantFollowups(annotations, state?.latestAssistantMessageId ?? null)
+  const sortedAnnotations = useMemo(
+    () => [...annotations].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+    [annotations]
+  )
+  const importLabel = t('webview.annotation.import_followups', { count: latestFollowups.length })
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b px-4 py-2">
+        <span className="min-w-0 truncate text-sm font-semibold text-muted-foreground">
+          {t('webview.annotation.current_session')} · {t('webview.annotation.count', { count: annotations.length })}
+        </span>
+        <NormalTooltip content={importLabel} side="bottom">
+          <button
+            aria-label={importLabel}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={latestFollowups.length === 0}
+            onClick={() => {
+              void EventEmitter.emit(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, {
+                topicId: scope.topicId,
+                turn: state?.latestAssistantTurn ?? 0,
+                messageSeq: state?.latestAssistantMessageSeq ?? 0,
+                annotations: latestFollowups
+              })
+            }}
+            type="button">
+            <Send aria-hidden="true" className="size-5" />
+          </button>
+        </NormalTooltip>
+      </header>
+      <div className="min-h-0 flex-1 overflow-auto px-4">
+        {sortedAnnotations.length ? (
+          <ol className="flex flex-col">
+            {sortedAnnotations.map((annotation) => (
+              <AnnotationEntry
+                key={annotation.id}
+                annotation={annotation}
+                selected={annotation.id === state?.selectedId}
+                onSelect={() => state?.select(annotation.id)}
+              />
+            ))}
+          </ol>
+        ) : (
+          <div className="flex min-h-full flex-col items-center justify-center gap-2 px-4 py-10 text-center text-muted-foreground">
+            <MessagesSquare aria-hidden="true" className="size-9 opacity-80" />
+            <p className="max-w-60 text-sm font-medium">{t('webview.annotation.empty_description')}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AnnotationEntry({
+  annotation,
+  selected,
+  onSelect
+}: {
+  annotation: Annotation
+  selected?: boolean
+  onSelect: () => void
+}) {
+  return (
+    <li className="chat-annotation-entry">
+      <button
+        aria-current={selected ? 'true' : undefined}
+        className="w-full min-w-0 text-left"
+        onClick={onSelect}
+        type="button">
+        <blockquote className="chat-annotation-quote">
+          <span className={`chat-annotation-excerpt chat-annotation-excerpt-${annotation.kind}`}>
+            {annotation.exact}
+          </span>
+        </blockquote>
+        {annotation.content && <span className="chat-annotation-content">{annotation.content}</span>}
+        <time className="chat-annotation-time" dateTime={annotation.updatedAt}>
+          {dayjs(annotation.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+        </time>
+      </button>
+    </li>
+  )
+}
+
+function TopicAnnotationPaneOpener({
+  topicId,
+  onLatestAssistant
+}: {
+  topicId?: string
+  onLatestAssistant: (id: string | null, messageSeq: number, turn: number) => void
+}) {
+  const actions = useRightPanelActions()
+  const pane = use(TopicAnnotationPaneContext)
+  useEffect(
+    () =>
+      EventEmitter.on(EVENT_NAMES.OPEN_MESSAGE_ANNOTATIONS, (payload: unknown) => {
+        if (!payload || typeof payload !== 'object') return
+        const request = payload as { topicId?: unknown; annotationId?: unknown }
+        if (request.topicId !== topicId) return
+        pane?.select(typeof request.annotationId === 'string' ? request.annotationId : null)
+        actions.tryOpen('annotations')
+      }),
+    [actions, pane, topicId]
+  )
+  useEffect(
+    () =>
+      EventEmitter.on(EVENT_NAMES.LATEST_ASSISTANT_MESSAGE, (payload: unknown) => {
+        if (!payload || typeof payload !== 'object') return
+        const update = payload as { topicId?: unknown; messageId?: unknown; messageSeq?: unknown; turn?: unknown }
+        if (update.topicId === topicId) {
+          onLatestAssistant(
+            typeof update.messageId === 'string' ? update.messageId : null,
+            typeof update.messageSeq === 'number' && Number.isSafeInteger(update.messageSeq) ? update.messageSeq : 0,
+            typeof update.turn === 'number' && Number.isSafeInteger(update.turn) ? update.turn : 0
+          )
+        }
+      }),
+    [onLatestAssistant, topicId]
+  )
+  return null
+}
+
 function TopicBrowserRightPanel({ active, scope }: RightPanelComponentProps<TopicRightPanelScope>) {
   const actions = useRightPanelActions()
   if (!scope.topicId) return null
@@ -193,8 +349,19 @@ const TOPIC_TRACE_PANE_CAPABILITY = {
     readiness: scope.developerMode && scope.topicId ? 'ready' : 'unavailable'
   })
 } satisfies RightPanelCapability<TopicRightPanelScope>
+const TOPIC_ANNOTATION_PANE_CAPABILITY = {
+  component: TopicAnnotationRightPanel,
+  resolve: (scope: TopicRightPanelScope) => ({
+    id: 'annotations',
+    instanceKey: `annotations:${scope.topicId ?? 'unavailable'}`,
+    title: scope.annotationTitle,
+    headerMode: 'content',
+    readiness: scope.topicId ? 'ready' : 'unavailable'
+  })
+} satisfies RightPanelCapability<TopicRightPanelScope>
 const TOPIC_RIGHT_PANEL_CAPABILITIES = [
   TOPIC_RESOURCE_PANE_CAPABILITY,
+  TOPIC_ANNOTATION_PANE_CAPABILITY,
   {
     component: TopicBranchRightPanel,
     resolve: (scope) => ({
@@ -244,11 +411,33 @@ function TopicRightPaneProvider({
   const [enableDeveloperMode] = usePreference('app.developer_mode.enabled')
   const storeRef = useRef<TopicBranchLiveStateStore>(undefined as never)
   if (!storeRef.current) storeRef.current = createTopicBranchLiveStateStore()
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null)
+  const [latestAssistantMessageId, setLatestAssistantMessageId] = useState<string | null>(null)
+  const [latestAssistantMessageSeq, setLatestAssistantMessageSeq] = useState(0)
+  const [latestAssistantTurn, setLatestAssistantTurn] = useState(0)
+  const setLatestAssistant = useCallback((id: string | null, seq: number, turn: number) => {
+    setLatestAssistantMessageId(id)
+    setLatestAssistantMessageSeq(seq)
+    setLatestAssistantTurn(turn)
+  }, [])
+  const annotationPaneState = useMemo<TopicAnnotationPaneState>(
+    () => ({
+      selectedId: selectedAnnotationId,
+      latestAssistantMessageId,
+      latestAssistantMessageSeq,
+      latestAssistantTurn,
+      select: setSelectedAnnotationId,
+      setLatestAssistant
+    }),
+    [latestAssistantMessageId, latestAssistantMessageSeq, latestAssistantTurn, selectedAnnotationId, setLatestAssistant]
+  )
+
   const scope = useMemo<TopicRightPanelScope>(
     () => ({
       topicId,
       topicName,
       traceId,
+      annotationTitle: t('webview.annotation.title'),
       resourcePane: resourcePane ?? null,
       developerMode: enableDeveloperMode,
       browserTitle: t('settings.browser.title'),
@@ -262,14 +451,19 @@ function TopicRightPaneProvider({
     <RightPanelProvider
       capabilities={TOPIC_RIGHT_PANEL_CAPABILITIES}
       scope={scope}
-      defaultPanelId={RESOURCE_PANE_TAB}
+      defaultPanelId={resourcePane ? 'resources' : 'annotations'}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       userOpenIntentSeq={userOpenIntentSeq}
       present={present}>
       <TopicBrowserPaneOpener topicId={topicId} />
       <ResourcePaneLocateOpener revealRequest={revealRequest} />
-      <TopicBranchLiveStateStoreContext value={storeRef.current}>{children}</TopicBranchLiveStateStoreContext>
+      <TopicBranchLiveStateStoreContext value={storeRef.current}>
+        <TopicAnnotationPaneContext value={annotationPaneState}>
+          <TopicAnnotationPaneOpener topicId={topicId} onLatestAssistant={setLatestAssistant} />
+          {children}
+        </TopicAnnotationPaneContext>
+      </TopicBranchLiveStateStoreContext>
     </RightPanelProvider>
   )
 }
@@ -307,6 +501,11 @@ function TopicRightPaneShortcuts({ browserEnabled = true }: { browserEnabled?: b
         <RightPanelShortcut tab="browser" label={t('settings.browser.title')} icon={<Globe className="size-3.5" />} />
       )}
       <RightPanelShortcut tab="branch" label={t('chat.message.flow.title')} icon={<GitBranch className="size-3.5" />} />
+      <RightPanelShortcut
+        tab="annotations"
+        label={t('webview.annotation.title')}
+        icon={<Notebook className="size-3.5" />}
+      />
       <RightPanelShortcut tab={TRACE_PANE_ID} label={t('trace.label')} icon={<Activity className="size-3.5" />} />
     </>
   )

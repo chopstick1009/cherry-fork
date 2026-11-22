@@ -615,6 +615,22 @@ describe('VoiceSettings', () => {
     )
   })
 
+  it('clears removed Windows system voice selections from saved preferences', async () => {
+    MockUsePreferenceUtils.setMultiplePreferenceValues({
+      'feature.voice.recognition.model_id': 'local-voice::windows-system-asr',
+      'feature.voice.speech.model_id': 'local-voice::windows-system-tts',
+      'feature.voice.speech.voice_id': 'removed-sapi-voice'
+    })
+
+    render(<VoiceSettings />)
+
+    await waitFor(() => {
+      expect(MockUsePreferenceUtils.getPreferenceValue('feature.voice.recognition.model_id')).toBe('')
+      expect(MockUsePreferenceUtils.getPreferenceValue('feature.voice.speech.model_id')).toBe('')
+      expect(MockUsePreferenceUtils.getPreferenceValue('feature.voice.speech.voice_id')).toBe('')
+    })
+  })
+
   it('keeps recognition loading and installing ahead of a missing-model reason', async () => {
     const resolution = deferred<any>()
     voice.resolveTranscription.mockReturnValue(resolution.promise)

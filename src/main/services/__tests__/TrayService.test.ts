@@ -90,6 +90,8 @@ describe('TrayService', () => {
     activateTray()
     const firstGuid = mocks.trayConstructor.mock.calls[0][1]
 
+    expect(mocks.trayConstructor.mock.calls[0][0]).toMatch(/cherry-studio\.ico(?:\?asset)?$/i)
+
     activateTray()
     const secondGuid = mocks.trayConstructor.mock.calls[1][1]
 

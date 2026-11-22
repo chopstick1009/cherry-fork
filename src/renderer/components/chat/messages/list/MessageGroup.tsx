@@ -351,6 +351,7 @@ const MessageGroup = ({
           id={`message-${currentTabId ? `${currentTabId}-` : ''}${captureMode ? 'capture-' : ''}${message.id}`}
           key={message.id}
           data-message-id={message.id}
+          data-message-role={message.role}
           messageId={message.id}
           onElementChange={registerRenderedMessageElement}
           className={classNames([
@@ -375,6 +376,8 @@ const MessageGroup = ({
             content={
               <SelectionContextMenu openBrowserUrl={actions.openBrowserUrl}>
                 <MessageWrapper
+                  data-message-id={message.id}
+                  data-message-role={message.role}
                   tabIndex={0}
                   className={classNames([
                     'in-popover',

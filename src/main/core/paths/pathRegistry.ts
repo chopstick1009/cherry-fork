@@ -53,6 +53,11 @@ export function buildPathRegistry() {
   const appUserDataProviderRegistryOverride = path.join(appUserDataRuntime, 'provider-registry-override')
   const appUserDataToolchain = path.join(appUserData, 'Toolchain')
   const appUserDataToolchainMise = path.join(appUserDataToolchain, 'mise')
+  const devClaudeCodeBinaryDir = !app.isPackaged ? process.env.CS_DEV_CLAUDE_CODE_BINARY_DIR?.trim() : undefined
+  if (devClaudeCodeBinaryDir && !path.isAbsolute(devClaudeCodeBinaryDir)) {
+    throw new Error('CS_DEV_CLAUDE_CODE_BINARY_DIR must be an absolute path.')
+  }
+  const claudeCodeBinaryDir = devClaudeCodeBinaryDir ?? path.join(appUserDataToolchain, 'claude-agent-sdk')
   const appSession = app.getPath('sessionData')
   const sysTemp = app.getPath('temp')
   const appTemp = path.join(sysTemp, 'CherryStudio')
@@ -60,7 +65,7 @@ export function buildPathRegistry() {
   const appExtraResources = process.resourcesPath
   // `resources/` inside asar (bundled assets) — distinct from appExtraResources
   const appRootResources = path.join(app.getAppPath(), 'resources')
-  const voiceHelperFilename = process.platform === 'win32' ? 'cherry-system-speech.exe' : 'cherry-system-speech'
+  const voiceHelperFilename = 'cherry-system-speech'
 
   return Object.freeze({
     // -- A. cherry.* — CHERRY_HOME infrastructure --
@@ -152,7 +157,7 @@ export function buildPathRegistry() {
     // Local embedding model cache (transformers.js HF cache root, downloaded on first use)
     'feature.embedding.models': path.join(appUserDataRuntime, 'models', 'qwen3-embedding'),
 
-    'feature.claude_code.binary': path.join(appUserDataToolchain, 'claude-agent-sdk'),
+    'feature.claude_code.binary': claudeCodeBinaryDir,
 
     // onnxruntime-node native binary (napi addon + shared lib), downloaded on first
     // use of local embedding or local OCR — see ai/localModel's shared artifacts.

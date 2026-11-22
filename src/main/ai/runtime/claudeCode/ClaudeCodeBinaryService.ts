@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { constants, createWriteStream, existsSync, readFileSync, statSync, accessSync } from 'node:fs'
-import { chmod, mkdir, mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -183,7 +183,12 @@ export class ClaudeCodeBinaryService extends BaseService {
       signal.throwIfAborted()
       await mkdir(path.dirname(this.installDir), { recursive: true })
       if (existsSync(this.installDir)) await rm(this.installDir, { recursive: true, force: true })
-      await rename(unpacked, this.installDir)
+      try {
+        await rename(unpacked, this.installDir)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error
+        await cp(unpacked, this.installDir, { recursive: true, errorOnExist: true, force: false })
+      }
       this.publish({ phase: 'ready', receivedBytes: this.status.receivedBytes, totalBytes: this.status.totalBytes })
       await this.cleanupOtherVersions()
     } finally {

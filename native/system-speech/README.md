@@ -2,7 +2,7 @@
 
 Private native boundary for Cherry Studio's local Voice Runtime. The production
 Main adapters own platform checks, temporary paths and cancellation; this package
-owns the Apple frameworks, Windows SAPI and their typed subprocess protocol. It is selectively
+owns Apple's system speech frameworks and their typed subprocess protocol. It is selectively
 rebuilt from validation PR #20733, not a validation application.
 
 `capabilities` and `transcribe` never request asset installation. On macOS 26 or
@@ -21,8 +21,8 @@ text, audio or user path is logged by the package.
 ## Build and test
 
 `pnpm dev`, `pnpm debug`, `pnpm dev:watch` and `pnpm start` prepare the native helper
-on supported Windows and macOS hosts. They build it when missing or older than its
-native sources, and reuse the existing executable otherwise. Run
+on supported macOS hosts. They build it when missing or older than its native sources,
+and reuse the existing executable otherwise. On other platforms preparation is skipped. Run
 `pnpm prepare:system-speech` to prepare it independently. `pnpm install` builds only
 the JavaScript boundary; native preparation requires the platform build tools below.
 
@@ -47,18 +47,9 @@ app's deep strict signature, and a capabilities round trip. The helper is signed
 its dedicated empty entitlement policy rather than Electron's inherited relaxations.
 A packaged helper smoke does not replace VoiceSessionService/IpcApi integration verification.
 
-Windows x64 system ASR and TTS use the SAPI helper under `windows/`. On Windows
-x64, `resolveDefaultAsrModel` recommends `local-voice::windows-system-asr` when
-no model is explicitly selected. An explicit selection is preserved. A `probe_asr` request initializes the installed recognizer and
-dictation grammar before transcription; it does not activate a microphone or
-install assets. Main decodes recorded WebM/Opus through the same utility process
-as Apple ASR, then sends the derived mono 16 kHz WAV to SAPI. Its build and
-packaging are architecture-gated; Windows ARM64 system speech is unsupported
-without blocking ARM64 application packages. See the [Windows helper guide](./windows/README.md)
-for build prerequisites, independent protocol and real ASR/TTS smokes, packaged
-helper signature checks, and the remaining NSIS/portable device acceptance.
-The native synthesis protocol requires an explicit `speed` from 0.5 to 2;
-Apple and Windows adapters both forward the selected speed.
+Windows provides no bundled system speech helper. The application uses its
+cross-platform local speech models or configured remote providers instead.
+The Apple native synthesis protocol requires an explicit `speed` from 0.5 to 2.
 
 ## Apple PCM streaming
 
@@ -73,7 +64,7 @@ The Apple callback writes bounded NDJSON directly to stdout: one `format`, order
 `end` message with the exact frame count. Each chunk contains at most 1,024 frames,
 one or two channels, and each line is capped at 16 KiB. Error envelopes retain the
 existing stable error codes. Missing voices are not substituted. There is no WAV
-scratch file in this path; complete synthesis and Windows requests are unchanged.
+scratch file in this path; complete synthesis requests are unchanged.
 
 The callback writes synchronously to the bounded OS pipe. Node pulls stdout only
 as downstream consumes it, retaining at most its readable buffer, one read batch

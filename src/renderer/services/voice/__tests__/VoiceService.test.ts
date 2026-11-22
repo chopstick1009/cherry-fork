@@ -153,6 +153,42 @@ describe('VoiceService state ownership', () => {
     })
   })
 
+  it('falls back to automatic recognition for the removed Windows system model', async () => {
+    request.mockResolvedValue({
+      modelId: FUNASR_MODEL_ID,
+      language: { source: TranscriptionLanguageSource.ModelDefault },
+      status: { status: 'ready' }
+    })
+    const service = new VoiceService({
+      ipc: { request, on },
+      ownerWindow,
+      readTranscriptionPreferences: async () => ({ modelId: 'local-voice::windows-system-asr', language: '' })
+    })
+
+    await expect(service.resolveTranscriptionPreferences()).resolves.toEqual({
+      modelId: FUNASR_MODEL_ID,
+      language: { source: TranscriptionLanguageSource.ModelDefault }
+    })
+    expect(request).toHaveBeenCalledWith('ai.voice.transcription.resolve', {
+      language: { source: TranscriptionLanguageSource.Interface, locale: 'en-US' }
+    })
+  })
+
+  it('falls back to the default voice model for the removed Windows system TTS model', async () => {
+    const service = new VoiceService({
+      ipc: { request, on },
+      ownerWindow,
+      readSpeechPreferences: async () => ({
+        modelId: 'local-voice::windows-system-tts',
+        voice: 'removed-sapi-voice',
+        language: 'en-US',
+        speed: 1
+      })
+    })
+
+    await expect(service.readSpeechPreferenceInput()).resolves.toEqual({ language: 'en-US', speed: 1 })
+  })
+
   it('resolves a captured recognition selection without reading preferences again', async () => {
     const readTranscriptionPreferences = vi.fn(async () => ({ modelId: FUNASR_MODEL_ID, language: 'en-US' }))
     request.mockResolvedValue({

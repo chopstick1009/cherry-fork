@@ -172,9 +172,10 @@ describe('TopicRightPane', () => {
     handler?.()
   }
 
-  it('registers the right sidebar keyboard shortcut for the branch pane', async () => {
+  it('opens the annotations pane by default from the right sidebar keyboard shortcut', async () => {
     render(
       <TopicRightPane.Scope topicId="topic-a">
+        <TopicRightPane.Shortcuts />
         <TopicRightPane.Viewport />
       </TopicRightPane.Scope>
     )
@@ -184,7 +185,13 @@ describe('TopicRightPane', () => {
     act(triggerRightSidebarShortcut)
 
     expect(screen.getByTestId('right-pane')).toHaveAttribute('data-open', 'true')
-    expect(await screen.findByTestId('branch-pane')).toBeInTheDocument()
+    expect(screen.getByText(/webview.annotation.current_session/)).toBeInTheDocument()
+    expect(document.querySelector('[data-shell-tab-shortcut="annotations"] svg.lucide-notebook')).toBeInTheDocument()
+    expect(screen.getByText('webview.annotation.empty_description')).toBeInTheDocument()
+    const importButtons = screen
+      .getAllByRole('button')
+      .filter((button) => button.getAttribute('aria-label')?.includes('webview.annotation.import_followups'))
+    expect(importButtons).toHaveLength(1)
 
     act(triggerRightSidebarShortcut)
 
@@ -206,7 +213,7 @@ describe('TopicRightPane', () => {
     expect(screen.getByTestId('resource-list')).toBeInTheDocument()
   })
 
-  it('hides environmental presentation without discarding topic pane intent or its visited instance', async () => {
+  it('hides environmental presentation without discarding the annotations pane selection', async () => {
     const { rerender } = render(
       <TopicRightPane.Scope topicId="topic-a">
         <TopicRightPane.Viewport />
@@ -214,7 +221,7 @@ describe('TopicRightPane', () => {
     )
 
     act(triggerRightSidebarShortcut)
-    const branchPane = await screen.findByTestId('branch-pane')
+    expect(screen.getByText(/webview.annotation.current_session/)).toBeInTheDocument()
 
     rerender(
       <TopicRightPane.Scope topicId="topic-a" present={false}>
@@ -224,7 +231,7 @@ describe('TopicRightPane', () => {
 
     expect(screen.getByTestId('right-pane')).toHaveAttribute('data-open', 'false')
 
-    expect(branchPane).toHaveAttribute('data-open', 'false')
+    expect(screen.getByText(/webview.annotation.current_session/)).not.toBeVisible()
 
     rerender(
       <TopicRightPane.Scope topicId="topic-a">
@@ -234,7 +241,7 @@ describe('TopicRightPane', () => {
 
     expect(screen.getByTestId('right-pane')).toHaveAttribute('data-open', 'true')
 
-    expect(branchPane).toHaveAttribute('data-open', 'true')
+    expect(screen.getByText(/webview.annotation.current_session/)).toBeInTheDocument()
   })
 
   it('loads the trace pane with the container traceId only when the trace tab is selected', async () => {

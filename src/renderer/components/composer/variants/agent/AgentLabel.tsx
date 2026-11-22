@@ -27,8 +27,8 @@ export const AgentLabel = ({ agent, avatarSize = 24, classNames, hideIcon }: Age
           src={agent?.avatarSrc}
           alt=""
           size={avatarSize}
-          className={cn('rounded-full object-cover', classNames?.avatar)}
-          fallback={<EmojiIcon emoji={emoji} className={classNames?.avatar} size={avatarSize} />}
+          className={cn('rounded-[6px] object-cover', classNames?.avatar)}
+          fallback={<EmojiIcon emoji={emoji} className={cn('!rounded-[6px]', classNames?.avatar)} size={avatarSize} />}
         />
       )}
       <span className={cn('truncate', 'text-foreground', classNames?.name)}>{agent?.name ?? ''}</span>

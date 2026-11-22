@@ -38,10 +38,10 @@ const RESOURCE_GLYPH_SIZE = 14
 
 function renderFallbackAssistantIcon(emoji: string | null | undefined, size: number, glyphSize: number) {
   return emoji ? (
-    <EmojiIcon emoji={emoji} size={size} />
+    <EmojiIcon emoji={emoji} size={size} className="!rounded-[6px]" />
   ) : (
     <span
-      className="flex items-center justify-center rounded-full bg-background-subtle"
+      className="flex items-center justify-center rounded-[6px] bg-background-subtle"
       style={{ width: size, height: size }}>
       <Bot size={glyphSize} />
     </span>
@@ -70,7 +70,7 @@ export function renderAssistantEntityIcon(
       src={assistant.avatarSrc}
       alt=""
       size={size}
-      className="rounded-full object-cover"
+      className="rounded-[6px] object-cover"
       fallback={renderFallbackAssistantIcon(assistant.emoji, size, fallbackGlyphSize)}
     />
   )
@@ -97,11 +97,12 @@ export function renderAgentEntityIcon(
       src={agent?.avatarSrc}
       alt=""
       size={size}
-      className="rounded-full object-cover"
+      className="rounded-[6px] object-cover"
       fallback={
         <EmojiIcon
           emoji={getAgentAvatarFromConfiguration(agent?.configuration) || DEFAULT_ASSISTANT_EMOJI}
           size={size}
+          className="!rounded-[6px]"
         />
       }
     />

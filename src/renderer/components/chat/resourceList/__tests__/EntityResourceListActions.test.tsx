@@ -2009,7 +2009,7 @@ describe('classic layout entity resource list actions', () => {
     expect(recycleBinFeedbackMocks.showRecycleBinUndo).not.toHaveBeenCalled()
   })
 
-  it('excludes permanent delete for a protected builtin Agent and the unknown Agent row', () => {
+  it('allows archiving a builtin Agent but excludes permanent delete and the unknown Agent row', () => {
     agentDataMocks.agents = [
       {
         id: 'agent-1',
@@ -2037,7 +2037,7 @@ describe('classic layout entity resource list actions', () => {
     )
 
     const isEligible = resourceEntityRailMocks.permanentDelete?.isItemEligible
-    expect(screen.getByTestId('agent-1-context-menu')).toHaveTextContent('agent.session.archive.trigger')
+    expect(screen.getByTestId('agent-1-context-menu')).toHaveTextContent('common.archive')
     expect(screen.getByTestId('agent-1-context-menu')).not.toHaveTextContent('common.delete_permanently')
     expect(screen.getByTestId('session:agent:unknown-context-menu')).toBeEmptyDOMElement()
     expect(isEligible?.({ id: 'agent-1', name: 'Cherry Assistant' })).toBe(false)
@@ -2219,13 +2219,13 @@ describe('classic layout entity resource list actions', () => {
     expect(agentDataMocks.getActiveResource).toHaveBeenCalledWith('/agents/agent-1')
   })
 
-  it('deletes only sessions for the built-in Cherry Assistant in the classic layout', async () => {
+  it('deletes only sessions for the system-only Doctor Agent in the classic layout', async () => {
     agentDataMocks.agents = [
       {
         id: 'agent-1',
-        name: 'Cherry Assistant',
+        name: 'System Doctor',
         orderKey: 'a',
-        configuration: { builtin_role: 'assistant' },
+        configuration: { builtin_role: 'doctor' },
         model: 'anthropic::claude-sonnet-4',
         modelName: 'Claude Sonnet 4'
       }
@@ -2256,7 +2256,7 @@ describe('classic layout entity resource list actions', () => {
     expect(popup.confirm).not.toHaveBeenCalled()
     expect(conversationOwnerPopupMocks.show).not.toHaveBeenCalled()
     expect(archiveSessionsPopupMocks.show).toHaveBeenCalledWith(
-      expect.objectContaining({ agentName: 'Cherry Assistant', sessionCount: 1 })
+      expect.objectContaining({ agentName: 'System Doctor', sessionCount: 1 })
     )
     expect(agentDataMocks.deleteAgent).not.toHaveBeenCalled()
     expect(tabsContextMocks.closeConversationTabs).toHaveBeenCalledWith('agents', ['session-1', 'session-not-loaded'])

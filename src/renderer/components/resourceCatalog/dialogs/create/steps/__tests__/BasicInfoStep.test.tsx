@@ -6,6 +6,7 @@ vi.mock('@renderer/components/cherryCloud/CherryCloudModelSelector', async () =>
 })
 
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -85,6 +86,7 @@ function Harness({
         showAgentFields={showAgentFields}
       />
       <output data-testid="permission-mode">{form.watch('permissionMode')}</output>
+      <output data-testid="agent-type">{form.watch('agentType')}</output>
     </Form>
   )
 }
@@ -109,6 +111,17 @@ describe('BasicInfoStep', () => {
     await waitFor(() =>
       expect(screen.getByPlaceholderText('library.config.dialogs.create.name_placeholder')).toHaveFocus()
     )
+  })
+
+  it('allows choosing Claude Code when creating an Agent', async () => {
+    const user = userEvent.setup()
+    render(<Harness showAgentFields />)
+    await user.click(screen.getByRole('combobox', { name: 'library.config.agent.field.runtime.label' }))
+    await user.click(
+      await screen.findByRole('option', { name: 'library.config.agent.field.runtime.option.claude_code' })
+    )
+
+    expect(screen.getByTestId('agent-type')).toHaveTextContent('claude-code')
   })
 
   it.each(['pi', 'claude-code'] as const)('still displays the runtime summary for an existing %s agent', (runtime) => {

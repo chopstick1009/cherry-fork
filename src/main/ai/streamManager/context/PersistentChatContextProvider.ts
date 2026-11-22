@@ -23,7 +23,6 @@ import { collectFileAttachments } from '@main/ai/messages/attachmentRouting'
 import { collectPersistedOutputPaths } from '@main/ai/messages/persistedOutputRendering'
 import { collectRetainedContext, type RetainedContext } from '@main/ai/messages/retainedContext'
 import { providerService } from '@main/data/services/ProviderService'
-import { topicNamingService } from '@main/services/TopicNamingService'
 import { compactionAnchorChunkId, type CompactionAnchorData, type CompactionSink } from '@shared/ai/compaction'
 import { aiStreamAdmissionReasons, applyApprovalDecisions } from '@shared/ai/transport'
 import type { ContextSettingsOverride } from '@shared/data/types/contextSettings'
@@ -423,24 +422,16 @@ export class PersistentChatContextProvider implements ChatContextProvider {
         }))
       })
 
-      const shouldAutoNameInitialTurn = !isRegenerate && !req.parentAnchorId
-      if (shouldAutoNameInitialTurn) {
-        topicNamingService.maybeRenameFromFirstUserMessage(req.topicId, userMessage.id)
-      }
-
       const assistantPlaceholders = turnRootSpans.map(({ model, span }, i) => ({
         model,
         placeholder: placeholders[i],
         rootSpan: span
       }))
 
-      // 1 subscriber + N per-model persistence listeners. Auto-rename attaches
-      // to the first backend only so it fires once for multi-model turns.
       const contextSettingsOverride = resolveAssistantContextOverride(assistantId)
       const listeners: StreamListener[] = [subscriber]
       for (let i = 0; i < assistantPlaceholders.length; i++) {
         const { model, placeholder } = assistantPlaceholders[i]
-        const attachAutoRename = shouldAutoNameInitialTurn && i === 0
         listeners.push(
           new PersistenceListener({
             topicId: req.topicId,
@@ -448,17 +439,7 @@ export class PersistentChatContextProvider implements ChatContextProvider {
             backend: new MessageServiceBackend({
               assistantMessageId: placeholder.id,
               turnOptions,
-              contextSettingsOverride,
-              afterPersist: attachAutoRename
-                ? async (finalMessage) => {
-                    await topicNamingService.maybeRenameFromConversationSummary(
-                      req.topicId,
-                      assistantId,
-                      userMessage.id,
-                      finalMessage
-                    )
-                  }
-                : undefined
+              contextSettingsOverride
             }),
             onPersistFailed: (error) =>
               application.get('AiStreamManager').broadcastTopicError(req.topicId, model.id, error)

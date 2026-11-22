@@ -26,11 +26,11 @@ export function ConversationGreeting({ avatar, title }: ConversationGreetingProp
       style={{ paddingBottom: inset?.contentBottomPadding ?? 0 }}>
       {avatar &&
         (isEmoji(avatar) ? (
-          <EmojiIcon emoji={avatar} size={48} />
+          <EmojiIcon emoji={avatar} size={48} className="!rounded-[6px]" />
         ) : (
-          <Avatar className="size-12">
-            <AvatarImage className="size-full object-cover" src={avatar} />
-            <AvatarFallback className="text-2xl">🤖</AvatarFallback>
+          <Avatar className="size-12 rounded-[6px]">
+            <AvatarImage className="size-full rounded-[6px] object-cover" src={avatar} />
+            <AvatarFallback className="rounded-[6px] text-2xl">🤖</AvatarFallback>
           </Avatar>
         ))}
       <h2 className="m-0 text-lg font-medium text-foreground">{title}</h2>
