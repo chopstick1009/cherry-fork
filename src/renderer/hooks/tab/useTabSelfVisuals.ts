@@ -13,6 +13,8 @@ export interface TabSelfVisuals {
   routePrefix?: string
   /** Keep the tab's stored title/icon while the bound conversation is still loading. */
   preserveVisuals?: boolean
+  /** Clear stale per-entity icons while preserving the title during a route transition. */
+  clearIconWhenPreserving?: boolean
 }
 
 /**
@@ -28,7 +30,8 @@ export function useTabSelfVisuals({
   emoji,
   icon: imageIcon,
   routePrefix,
-  preserveVisuals = false
+  preserveVisuals = false,
+  clearIconWhenPreserving = false
 }: TabSelfVisuals): void {
   const currentTabId = useCurrentTabId()
   const tabsContext = useOptionalTabsContext()
@@ -37,7 +40,10 @@ export function useTabSelfVisuals({
 
   useEffect(() => {
     if (!currentTabId || !updateTab || !currentTab) return
-    if (preserveVisuals) return
+    if (preserveVisuals) {
+      if (clearIconWhenPreserving && currentTab.icon !== undefined) updateTab(currentTabId, { icon: undefined })
+      return
+    }
     if (
       routePrefix &&
       currentTab.url !== routePrefix &&
@@ -48,5 +54,15 @@ export function useTabSelfVisuals({
     const icon = imageIcon ?? emojiTabIcon(emoji)
     if (currentTab.title === title && currentTab.icon === icon) return
     updateTab(currentTabId, { title, icon })
-  }, [currentTabId, currentTab, updateTab, title, emoji, imageIcon, routePrefix, preserveVisuals])
+  }, [
+    currentTabId,
+    currentTab,
+    updateTab,
+    title,
+    emoji,
+    imageIcon,
+    routePrefix,
+    preserveVisuals,
+    clearIconWhenPreserving
+  ])
 }

@@ -408,6 +408,12 @@ describe('AgentChat locate pending message', () => {
       )
   })
 
+  it('opens the notes pane by default for an agent conversation', () => {
+    renderAgentChat(<AgentChat {...activeSessionProps()} />)
+
+    expect(screen.getByTestId('agent-right-pane')).toHaveAttribute('data-open', 'true')
+  })
+
   it.each([true, false])(
     'scrolls to the end for an explicit end request or a missing anchor (explicit=%s)',
     async (explicit) => {

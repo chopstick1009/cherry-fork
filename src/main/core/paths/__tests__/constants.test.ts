@@ -109,6 +109,28 @@ describe('LOGS_DIR dev diversion', () => {
     expect(setAppLogsPath).toHaveBeenCalledWith(path.join(DEV_PROFILE_ROOT, 'logs'))
   })
 
+  it('uses an explicit development userData path and places logs beside it', async () => {
+    stubPlatform('win32')
+    stubWin32Path()
+    vi.stubEnv('CS_DEV_PROFILE_ROOT', 'D:\\Cherry\\Profile')
+    vi.stubEnv('CS_DEV_USER_DATA_PATH', '  D:\\Cherry\\PortableData  ')
+    const { setAppLogsPath } = stubElectron({ userData: 'C:\\Users\\dev\\AppData\\Roaming\\CherryStudio' })
+
+    const { LOGS_DIR, resolveDevUserDataPath } = await loadConstants()
+
+    expect(resolveDevUserDataPath()).toBe('D:\\Cherry\\PortableData')
+    expect(LOGS_DIR).toBe('D:\\Cherry\\PortableData\\logs')
+    expect(setAppLogsPath).toHaveBeenCalledWith('D:\\Cherry\\PortableData\\logs')
+    vi.doUnmock('node:path')
+  })
+
+  it.each(['relative\\data', 'C:\\'])('rejects an unsafe explicit development userData path: %s', async (value) => {
+    vi.stubEnv('CS_DEV_USER_DATA_PATH', value)
+    stubElectron()
+
+    await expect(loadConstants()).rejects.toThrow(/CS_DEV_USER_DATA_PATH/)
+  })
+
   it('dev macOS: suffixes the name-derived logs directory', async () => {
     stubPlatform('darwin')
     const { setAppLogsPath } = stubElectron()

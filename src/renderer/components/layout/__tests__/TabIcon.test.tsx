@@ -22,6 +22,15 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it('uses the route vector icon for chat tabs instead of an assistant avatar', () => {
+  const tab: Tab = { id: 'chat', type: 'route', url: '/app/chat?topicId=topic-1', title: 'Topic' }
+
+  const view = render(<TabIcon tab={tab} size={16} />)
+
+  expect(view.container.querySelector('svg.lucide-message-circle')).toBeInTheDocument()
+  expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
+})
+
 it('shows the website favicon and falls back to a globe when it is missing or fails to load', () => {
   vi.stubGlobal('Image', TestImage)
   const tab: Tab = { id: 'browser', type: 'route', url: '/app/browser?url=https://example.com', title: 'Example' }

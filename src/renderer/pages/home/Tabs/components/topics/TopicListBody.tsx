@@ -329,7 +329,7 @@ const TopicRow = memo(function TopicRow({
     <ResourceList.Item
       item={topic}
       data-testid="topic-list-row"
-      className="relative"
+      className={cn('relative', displayMode === 'assistant' && !topic.pinned && 'pl-5!')}
       style={{ cursor: 'pointer' }}
       onClick={() => {
         if (rightPanelState?.maximized) rightPanelActions?.minimize()

@@ -1,4 +1,5 @@
-import { ArrowLeft, Bot, FolderOpen, GitBranch, Waypoints } from 'lucide-react'
+import dayjs from 'dayjs'
+import { ArrowLeft, Bot, FolderOpen, GitBranch, MessagesSquare, Notebook, Send, Waypoints } from 'lucide-react'
 import { Globe } from 'lucide-react'
 import type { ReactNode } from 'react'
 import {
@@ -29,9 +30,11 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
+  NormalTooltip,
   Tooltip
 } from '@cherrystudio/ui'
 import { AgentContextUsageSummary } from '@renderer/components/chat/agent/AgentContextUsageSummary'
+import { getLatestAssistantFollowups } from '@renderer/components/chat/messages/annotations/annotationFollowups'
 import { KeyedMessageActivityStore } from '@renderer/components/chat/messages/hooks/useMessageActivityState'
 import MessageList from '@renderer/components/chat/messages/MessageList'
 import { MessageListProvider } from '@renderer/components/chat/messages/MessageListProvider'
@@ -71,6 +74,7 @@ import type { ResourceListRevealRequest } from '@renderer/components/chat/resour
 import ComposerFloatingCapsule from '@renderer/components/composer/ComposerFloatingCapsule'
 import { FilePreviewNavigationProvider, hasRenderedFilePreview } from '@renderer/components/FilePreview'
 import type { WebviewAnnotationSavedPayload } from '@renderer/components/WebviewAnnotationControls'
+import { useQuery } from '@renderer/data/hooks/useDataApi'
 import { usePreference } from '@renderer/data/hooks/usePreference'
 import { useAgentChildProjection } from '@renderer/hooks/agent/useAgentChildProjection'
 import { useAgentDesktopControls } from '@renderer/hooks/agent/useAgentDesktopControls'
@@ -280,6 +284,10 @@ interface AgentRightPaneActions {
 }
 
 interface AgentRightPanelScope {
+  annotationTitle: string
+  latestAssistantMessageId: string | null
+  latestAssistantMessageSeq: number
+  latestAssistantTurn: number
   browserTitle: string
   developerMode: boolean
   filePreviewSelection: ArtifactPaneFileSelection | null
@@ -298,6 +306,7 @@ type AgentConversationState = 'pending' | 'ready' | 'unavailable'
 interface AgentRightPaneScopeProps extends Omit<AgentRightPaneMeta, 'conversationState'> {
   children: ReactNode
   conversationState?: AgentConversationState
+  defaultPanelId?: string
   /** Controls effective presentation without clearing panel intent. */
   present?: boolean
   resourcePane?: ResourcePaneConfig | null
@@ -317,6 +326,11 @@ const AgentRightPaneRuntimeContext = createContext<AgentRightPaneRuntime | null>
 const AgentRightPaneFileStateContext = createContext<AgentRightPaneFileState | null>(null)
 const AgentRightPaneActionsContext = createContext<AgentRightPaneActions | null>(null)
 const AgentFileNavigationContext = createContext<AgentFileNavigationRequest | null>(null)
+interface AgentAnnotationPaneState {
+  selectedId: string | null
+  select: (id: string | null) => void
+}
+const AgentAnnotationPaneContext = createContext<AgentAnnotationPaneState | null>(null)
 
 function useAgentRightPaneMeta(): AgentRightPaneMeta {
   const value = use(AgentRightPaneMetaContext)
@@ -611,6 +625,7 @@ function AgentRightPaneStateProvider({
   agentAvatar,
   model,
   conversationState = 'ready',
+  defaultPanelId,
   present = true,
   resourcePane = null,
   defaultOpen = false,
@@ -639,6 +654,7 @@ function AgentRightPaneStateProvider({
   const [previewFileSelection, setPreviewFileSelection] = useState<ArtifactPaneFileSelection | null>(null)
   const [fileTabs, setFileTabs] = useState<ArtifactPaneFileSelection[]>([])
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null)
   const [editMode, setEditMode] = useState<AgentFileEditorMode>('preview')
   const browserOwnerTabId = useCurrentTabId()
   useLayoutEffect(() => {
@@ -654,6 +670,22 @@ function AgentRightPaneStateProvider({
   const flowTabs = flowTabState.sessionId === sessionId ? flowTabState.tabs : []
   const flowTab = flowTabs.at(-1) ?? null
   const previousFlowTab = flowTabs.at(-2) ?? null
+  const latestAssistantPosition = useMemo(() => {
+    let messageId: string | null = null
+    let messageSeq = 0
+    let turn = 0
+    messages.forEach((message, index) => {
+      if (message.role !== 'assistant') return
+      messageId = message.id
+      messageSeq = index + 1
+      turn += 1
+    })
+    return { latestAssistantMessageId: messageId, latestAssistantMessageSeq: messageSeq, latestAssistantTurn: turn }
+  }, [messages])
+  const annotationPaneState = useMemo<AgentAnnotationPaneState>(
+    () => ({ selectedId: selectedAnnotationId, select: setSelectedAnnotationId }),
+    [selectedAnnotationId]
+  )
   const goBackFlow = useCallback(() => {
     setFlowTabState((state) => ({ ...state, tabs: state.tabs.slice(0, -1) }))
   }, [])
@@ -992,6 +1024,8 @@ function AgentRightPaneStateProvider({
   const scope = useMemo<AgentRightPanelScope>(
     () => ({
       browserTitle: t('agent.right_pane.tabs.browser'),
+      annotationTitle: t('webview.annotation.title'),
+      ...latestAssistantPosition,
       developerMode: enableDeveloperMode,
       filePreviewSelection: previewFileSelection,
       hasSystemWorkspaceEntries,
@@ -1000,6 +1034,7 @@ function AgentRightPaneStateProvider({
       previousFlowTab,
       goBackFlow,
       meta,
+      latestAssistantPosition,
       resourcePane,
       traceTitle: t('trace.label')
     }),
@@ -1024,31 +1059,34 @@ function AgentRightPaneStateProvider({
             <RightPanelProvider
               capabilities={AGENT_RIGHT_PANEL_CAPABILITIES}
               scope={scope}
-              defaultPanelId={RESOURCE_PANE_TAB}
+              defaultPanelId={defaultPanelId ?? RESOURCE_PANE_TAB}
               defaultOpen={defaultOpen}
               onOpenChange={onOpenChange}
               userOpenIntentSeq={userOpenIntentSeq}
               present={present}>
-              <ResourcePaneLocateOpener revealRequest={revealRequest} />
-              <AgentRightPaneActionsProvider
-                artifactOpenRequestRef={artifactOpenRequestRef}
-                conversationState={conversationState}
-                sessionId={sessionId}
-                workspacePath={workspacePath}
-                acceptedWorkspacePath={fileWorkspace.path}
-                replaceFlowTab={replaceFlowTab}
-                openBrowserUrl={openBrowserUrl}
-                previewFileSelection={previewFileSelection}
-                requestFileSelection={requestFileSelection}
-                closeInactiveFileTab={closeInactiveFileTab}
-                retainFileTabs={retainFileTabs}
-                selectFile={selectFile}
-                setFileEditMode={requestFileEditMode}
-                setFileTreeExpandedIds={setFileTreeExpandedIds}
-                setFileTreeSearchKeyword={setFileTreeSearchKeyword}
-                workspaceCurrent={fileWorkspace.key === workspaceKey}>
-                <AgentDetailsScope present={present}>{children}</AgentDetailsScope>
-              </AgentRightPaneActionsProvider>
+              <AgentAnnotationPaneContext value={annotationPaneState}>
+                <AgentAnnotationPaneOpener sessionId={sessionId} />
+                <ResourcePaneLocateOpener revealRequest={revealRequest} />
+                <AgentRightPaneActionsProvider
+                  artifactOpenRequestRef={artifactOpenRequestRef}
+                  conversationState={conversationState}
+                  sessionId={sessionId}
+                  workspacePath={workspacePath}
+                  acceptedWorkspacePath={fileWorkspace.path}
+                  replaceFlowTab={replaceFlowTab}
+                  openBrowserUrl={openBrowserUrl}
+                  previewFileSelection={previewFileSelection}
+                  requestFileSelection={requestFileSelection}
+                  closeInactiveFileTab={closeInactiveFileTab}
+                  retainFileTabs={retainFileTabs}
+                  selectFile={selectFile}
+                  setFileEditMode={requestFileEditMode}
+                  setFileTreeExpandedIds={setFileTreeExpandedIds}
+                  setFileTreeSearchKeyword={setFileTreeSearchKeyword}
+                  workspaceCurrent={fileWorkspace.key === workspaceKey}>
+                  <AgentDetailsScope present={present}>{children}</AgentDetailsScope>
+                </AgentRightPaneActionsProvider>
+              </AgentAnnotationPaneContext>
             </RightPanelProvider>
             <ConfirmDialog
               open={pendingLeave !== null}
@@ -1743,6 +1781,7 @@ function resolveAgentTraceReadiness(scope: AgentRightPanelScope): RightPanelRead
 /** Stable capability registry; runtime messages are intentionally absent. */
 const TRACE_PANE_ID = 'trace'
 const BROWSER_PANE_ID = 'browser'
+const ANNOTATION_PANE_ID = 'annotations'
 const AGENT_RESOURCE_PANE_CAPABILITY = createResourcePaneCapability<AgentRightPanelScope>({
   instanceKey: 'agent-resources'
 })
@@ -1764,6 +1803,15 @@ const AGENT_BROWSER_PANE_CAPABILITY = {
     readiness: scope.meta.sessionId && scope.meta.conversationState !== 'unavailable' ? 'ready' : 'unavailable',
     headerMode: 'content',
     canMaximize: true
+  })
+} satisfies RightPanelCapability<AgentRightPanelScope>
+const AGENT_ANNOTATION_PANE_CAPABILITY = {
+  component: AgentAnnotationRightPanel,
+  resolve: (scope: AgentRightPanelScope) => ({
+    id: ANNOTATION_PANE_ID,
+    instanceKey: 'agent-annotations',
+    title: scope.annotationTitle,
+    readiness: 'ready'
   })
 } satisfies RightPanelCapability<AgentRightPanelScope>
 const AGENT_RIGHT_PANEL_CAPABILITIES = [
@@ -1793,8 +1841,100 @@ const AGENT_RIGHT_PANEL_CAPABILITIES = [
         readiness: scope.meta.conversationState
       }
     }
-  }
+  },
+  AGENT_ANNOTATION_PANE_CAPABILITY
 ] satisfies readonly RightPanelCapability<AgentRightPanelScope>[]
+
+function AgentAnnotationRightPanel({ scope }: RightPanelComponentProps<AgentRightPanelScope>) {
+  const { t } = useTranslation()
+  const state = use(AgentAnnotationPaneContext)
+  const topicId = scope.meta.sessionId ? buildAgentSessionTopicId(scope.meta.sessionId) : ''
+  const { data } = useQuery('/topics/:topicId/annotations', {
+    enabled: !!topicId,
+    params: { topicId }
+  })
+  const annotations = useMemo(
+    () => (Array.isArray(data) ? [...data].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)) : []),
+    [data]
+  )
+  const latestFollowups = getLatestAssistantFollowups(annotations, scope.latestAssistantMessageId)
+  const importLabel = t('webview.annotation.import_followups', { count: latestFollowups.length })
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b px-4 py-2">
+        <span className="min-w-0 truncate text-sm font-semibold text-muted-foreground">
+          {t('webview.annotation.current_session')} · {annotations.length} 条
+        </span>
+        <NormalTooltip content={importLabel} side="bottom">
+          <button
+            aria-label={importLabel}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={latestFollowups.length === 0}
+            onClick={() => {
+              void EventEmitter.emit(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, {
+                topicId,
+                turn: scope.latestAssistantTurn,
+                messageSeq: scope.latestAssistantMessageSeq,
+                annotations: latestFollowups
+              })
+            }}
+            type="button">
+            <Send aria-hidden="true" className="size-5" />
+          </button>
+        </NormalTooltip>
+      </header>
+      <div className="min-h-0 flex-1 overflow-auto px-4">
+        {annotations.length ? (
+          <ol className="flex flex-col">
+            {annotations.map((annotation) => (
+              <li key={annotation.id} className="chat-annotation-entry">
+                <button
+                  aria-current={annotation.id === state?.selectedId ? 'true' : undefined}
+                  className="w-full min-w-0 text-left"
+                  onClick={() => state?.select(annotation.id)}
+                  type="button">
+                  <blockquote className="chat-annotation-quote">
+                    <span className={`chat-annotation-excerpt chat-annotation-excerpt-${annotation.kind}`}>
+                      {annotation.exact}
+                    </span>
+                  </blockquote>
+                  {annotation.content && <span className="chat-annotation-content">{annotation.content}</span>}
+                  <time className="chat-annotation-time" dateTime={annotation.updatedAt}>
+                    {dayjs(annotation.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                  </time>
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="flex min-h-full flex-col items-center justify-center gap-2 px-4 py-10 text-center text-muted-foreground">
+            <MessagesSquare aria-hidden="true" className="size-9 opacity-80" />
+            <p className="max-w-60 text-sm font-medium">{t('webview.annotation.empty_description')}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AgentAnnotationPaneOpener({ sessionId }: { sessionId?: string }) {
+  const actions = useRightPanelActions()
+  const state = use(AgentAnnotationPaneContext)
+  const topicId = sessionId ? buildAgentSessionTopicId(sessionId) : undefined
+  useEffect(
+    () =>
+      EventEmitter.on(EVENT_NAMES.OPEN_MESSAGE_ANNOTATIONS, (payload: unknown) => {
+        if (!payload || typeof payload !== 'object') return
+        const request = payload as { topicId?: unknown; annotationId?: unknown }
+        if (request.topicId !== topicId) return
+        state?.select(typeof request.annotationId === 'string' ? request.annotationId : null)
+        actions.tryOpen(ANNOTATION_PANE_ID)
+      }),
+    [actions, state, topicId]
+  )
+  return null
+}
 
 const AgentRightPaneViewport = memo(function AgentRightPaneViewport() {
   return <RightPanelViewport />
@@ -1810,11 +1950,6 @@ const AgentRightPaneShortcuts = memo(function AgentRightPaneShortcuts({
 
   return (
     <>
-      <RightPanelShortcut
-        tab={FILES_PANE_ID}
-        label={t('agent.right_pane.tabs.files')}
-        icon={<FolderOpen className="size-3.5" />}
-      />
       {browserEnabled && browserControlEnabled && (
         <RightPanelShortcut
           tab={BROWSER_PANE_ID}
@@ -1825,6 +1960,16 @@ const AgentRightPaneShortcuts = memo(function AgentRightPaneShortcuts({
       <AgentSessionDetailsToggle>
         <AgentDetailsContent />
       </AgentSessionDetailsToggle>
+      <RightPanelShortcut
+        tab={ANNOTATION_PANE_ID}
+        label={t('webview.annotation.title')}
+        icon={<Notebook className="size-3.5" />}
+      />
+      <RightPanelShortcut
+        tab={FILES_PANE_ID}
+        label={t('agent.right_pane.tabs.files')}
+        icon={<FolderOpen className="size-3.5" />}
+      />
       <RightPanelShortcut tab={TRACE_PANE_ID} label={t('trace.label')} icon={<Waypoints className="size-3.5" />} />
     </>
   )

@@ -154,6 +154,16 @@ before the path registry is initialized; macOS does not honor `TMPDIR` for this 
 CS_DEV_PROFILE_ROOT=/absolute/path/to/cherry-profile pnpm dev
 ```
 
+Set `CS_DEV_USER_DATA_PATH` when only Electron userData must use an explicit
+location, for example to share a development database with a portable build.
+The path must be absolute and cannot be the filesystem root. It takes
+precedence over the userData location selected by `CS_DEV_PROFILE_ROOT` or the
+default suffix; development logs are placed in its `logs` subdirectory.
+
+```bash
+CS_DEV_USER_DATA_PATH=/absolute/path/to/portable/data pnpm dev
+```
+
 Set `CS_DEV_USER_DATA_SUFFIX` to run multiple development instances with
 isolated app data and locks. Use `.env` for a persistent local default:
 

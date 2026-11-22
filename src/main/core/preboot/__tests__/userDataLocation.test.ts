@@ -313,6 +313,21 @@ describe('resolveUserDataLocation', () => {
       expect(setPathMock).toHaveBeenCalledTimes(1)
     })
 
+    it('app.isPackaged=false: creates and uses an explicit development userData path', async () => {
+      vi.stubEnv('CS_DEV_USER_DATA_PATH', 'D:\\Cherry\\PortableData')
+      stubConstants({ isLinux: false, isWin: false, isPortable: false })
+      stubElectron({ isPackaged: false, userData: resolvePath('/mock/userData') })
+      stubBootConfig()
+      const { mkdirSync } = stubFs()
+
+      const { resolveUserDataLocation } = await loadModule()
+      resolveUserDataLocation()
+
+      expect(mkdirSync).toHaveBeenCalledWith('D:\\Cherry\\PortableData', { recursive: true })
+      expect(setPathMock).toHaveBeenCalledWith('userData', 'D:\\Cherry\\PortableData')
+      expect(bootConfigGetMock).not.toHaveBeenCalled()
+    })
+
     it('app.isPackaged=false: creates and selects the configured dev profile userData', async () => {
       vi.stubEnv('CS_DEV_PROFILE_ROOT', '/private/tmp/cherry-profile')
       stubConstants({ isLinux: false, isWin: false, isPortable: false })
@@ -323,10 +338,12 @@ describe('resolveUserDataLocation', () => {
       const { resolveUserDataLocation } = await loadModule()
       resolveUserDataLocation()
 
-      expect(mkdirSync).toHaveBeenCalledWith('/private/tmp/cherry-profile/userData', { recursive: true })
-      expect(mkdirSync).toHaveBeenCalledWith('/private/tmp/cherry-profile/home/temp', { recursive: true })
-      expect(setPathMock).toHaveBeenCalledWith('temp', '/private/tmp/cherry-profile/home/temp')
-      expect(setPathMock).toHaveBeenCalledWith('userData', '/private/tmp/cherry-profile/userData')
+      expect(mkdirSync).toHaveBeenCalledWith(join('/private/tmp/cherry-profile', 'userData'), { recursive: true })
+      expect(mkdirSync).toHaveBeenCalledWith(join('/private/tmp/cherry-profile', 'home', 'temp'), {
+        recursive: true
+      })
+      expect(setPathMock).toHaveBeenCalledWith('temp', join('/private/tmp/cherry-profile', 'home', 'temp'))
+      expect(setPathMock).toHaveBeenCalledWith('userData', join('/private/tmp/cherry-profile', 'userData'))
       expect(bootConfigGetMock).not.toHaveBeenCalled()
     })
 

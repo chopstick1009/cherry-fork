@@ -77,6 +77,7 @@ export function SessionListBody({
         shortcutHint={shortcutHints.get(session.id)}
         active={session.id === activeSessionId}
         channelType={channelTypeMap[session.id]}
+        indented={displayMode === 'agent' && !session.pinned}
         pinned={session.pinned}
         reserveLeadingIconSlot={
           (displayMode === 'agent' && !session.pinned) ||

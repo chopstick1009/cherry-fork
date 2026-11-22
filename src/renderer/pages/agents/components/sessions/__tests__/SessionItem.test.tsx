@@ -129,6 +129,26 @@ sessionMenuActions.exportMenuOptions = {
 }
 
 describe('SessionItem', () => {
+  it('indents sessions when rendered under an agent group', () => {
+    const Provider = ResourceList.Provider<AgentSessionEntity>
+    render(
+      <Provider items={[session]} selectedId={session.id}>
+        <SessionHoverPreviewGroup>
+          <SessionItem
+            indented
+            session={session}
+            sessionMenuActions={sessionMenuActions}
+            onDelete={vi.fn()}
+            onOpenRenameDialog={vi.fn()}
+            onPress={vi.fn()}
+          />
+        </SessionHoverPreviewGroup>
+      </Provider>
+    )
+
+    expect(screen.getByTestId('agent-session-row')).toHaveClass('pl-5!')
+  })
+
   it('shows the number shortcut in place of the stream status until the hint clears', () => {
     using statusSpy = vi.spyOn(topicStreamStatus, 'useTopicStreamStatus')
     statusSpy.mockReturnValue({

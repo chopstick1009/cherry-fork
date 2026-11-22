@@ -106,4 +106,49 @@ describe('useTabSelfVisuals', () => {
 
     expect(mocks.updateTab).not.toHaveBeenCalled()
   })
+
+  it('clears a previously stored assistant avatar when the caller supplies only the chat title', async () => {
+    mocks.tabs = [
+      {
+        id: 'tab-1',
+        type: 'route',
+        url: '/app/chat?topicId=topic-1',
+        title: 'Old title',
+        icon: 'https://example.com/assistant.png'
+      }
+    ]
+
+    render(
+      <TabIdProvider tabId="tab-1">
+        <TabVisualsWriter title="Topic title" routePrefix="/app/chat" />
+      </TabIdProvider>
+    )
+
+    await waitFor(() =>
+      expect(mocks.updateTab).toHaveBeenCalledWith('tab-1', {
+        title: 'Topic title',
+        icon: undefined
+      })
+    )
+  })
+
+  it('clears a stale icon while preserving visuals during an agent route transition', async () => {
+    mocks.tabs = [
+      {
+        id: 'tab-1',
+        type: 'route',
+        url: '/app/agents?sessionId=session-2',
+        title: 'Session one',
+        icon: 'icon:agent-avatar'
+      }
+    ]
+
+    render(
+      <TabIdProvider tabId="tab-1">
+        <TabVisualsWriter title="Session two" routePrefix="/app/agents" preserveVisuals clearIconWhenPreserving />
+      </TabIdProvider>
+    )
+
+    await waitFor(() => expect(mocks.updateTab).toHaveBeenCalledWith('tab-1', { icon: undefined }))
+  })
 })

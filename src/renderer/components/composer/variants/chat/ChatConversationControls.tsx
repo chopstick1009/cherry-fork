@@ -1,15 +1,14 @@
-import { Bot, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { Button, EmojiIcon } from '@cherrystudio/ui'
-import { AssistantAvatarImage } from '@renderer/components/Avatar/AssistantAvatarImage'
+import { Button } from '@cherrystudio/ui'
 import ModelAvatar from '@renderer/components/Avatar/ModelAvatar'
 import { CherryCloudModelSelector as ModelSelector } from '@renderer/components/cherryCloud/CherryCloudModelSelector'
 import { getProviderDisplayName, type ModelSelectorFilter } from '@renderer/components/ModelSelector'
 import { openResourceEditDialog } from '@renderer/components/resourceCatalog/dialogs/ResourceEditDialogEventHost'
 import { AssistantSelector } from '@renderer/components/resourceCatalog/selectors'
-import { getLeadingEmoji, getProviderDisplayNameById } from '@renderer/utils/naming'
+import { getProviderDisplayNameById } from '@renderer/utils/naming'
 import { cn } from '@renderer/utils/style'
 import type { Model } from '@shared/data/types/model'
 import type { Provider } from '@shared/data/types/provider'
@@ -26,9 +25,6 @@ import {
 export interface ChatConversationControlsProps {
   assistantId: string | null
   assistantName: string
-  assistantEmoji?: string
-  /** An uploaded avatar, shown instead of the emoji. */
-  assistantAvatarSrc?: string
   model?: Model
   modelPending?: boolean
   providers: Provider[]
@@ -53,8 +49,6 @@ export interface ChatConversationControlsProps {
 export function ChatConversationControls({
   assistantId,
   assistantName,
-  assistantEmoji,
-  assistantAvatarSrc,
   model,
   modelPending,
   providers,
@@ -77,7 +71,6 @@ export function ChatConversationControls({
 }: ChatConversationControlsProps) {
   const { t } = useTranslation()
   const chatModelFilter = useCallback<ModelSelectorFilter>((candidate) => !isNonChatModel(candidate), [])
-  const assistantIcon = assistantEmoji || getLeadingEmoji(assistantName)
   const triggerClassName = side === 'bottom' ? COMPOSER_BELOW_SELECTOR_BUTTON_CLASS : COMPOSER_SELECTOR_BUTTON_CLASS
   const compactTriggerClassName = cn(triggerClassName, iconOnly && COMPOSER_ICON_ONLY_SELECTOR_BUTTON_CLASS)
   const labelClassName = cn('truncate', iconOnly && COMPOSER_ICON_ONLY_LABEL_CLASS)
@@ -126,19 +119,6 @@ export function ChatConversationControls({
       disabled={assistantTriggerAction === 'edit' && !assistantId}
       aria-label={assistantTriggerAction === 'edit' ? `${t('assistants.edit.title')}: ${assistantName}` : undefined}
       onClick={assistantTriggerAction === 'edit' ? handleAssistantEdit : undefined}>
-      <AssistantAvatarImage
-        src={assistantAvatarSrc}
-        alt=""
-        size={20}
-        className="shrink-0 rounded-[6px] object-cover"
-        fallback={
-          assistantIcon ? (
-            <EmojiIcon emoji={assistantIcon} size={20} className="!rounded-[6px]" />
-          ) : iconOnly ? (
-            <Bot size={16} aria-hidden />
-          ) : null
-        }
-      />
       <span className={cn('max-w-40', labelClassName)}>{assistantName}</span>
       {assistantTriggerAction === 'edit' ? null : (
         <ChevronDown size={14} aria-hidden className={cn('text-muted-foreground', iconOnly && 'hidden')} />

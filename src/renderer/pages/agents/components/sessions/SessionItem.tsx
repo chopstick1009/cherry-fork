@@ -32,6 +32,7 @@ interface SessionItemProps {
   shortcutHint?: string
   active?: boolean
   channelType?: string
+  indented?: boolean
   onDelete: (id: string) => void | Promise<void>
   onDeletePermanently?: (id: string) => void | Promise<void>
   permanentDeleteShortcut?: string
@@ -73,6 +74,7 @@ export interface SessionItemMenuActions {
 const SessionItem = ({
   active = false,
   channelType,
+  indented = false,
   onDelete,
   onDeletePermanently,
   permanentDeleteShortcut,
@@ -287,7 +289,7 @@ const SessionItem = ({
     <ResourceList.Item
       item={session}
       data-testid="agent-session-row"
-      className="relative"
+      className={cn('relative', indented && 'pl-5!')}
       style={{ cursor: 'pointer' }}
       onClick={handlePress}
       onAuxClick={handleAuxClick}>

@@ -1458,6 +1458,20 @@ describe('Topics', () => {
     expect(pinnedRow?.querySelector('[data-resource-list-leading-slot="true"]') ?? null).toBeInTheDocument()
   })
 
+  it('indents unpinned conversations in assistant groups', () => {
+    const { getByText } = renderTopicList()
+    const row = getByText('Alpha topic').closest('[data-testid="topic-list-row"]')
+
+    expect(row).toHaveClass('pl-5!')
+  })
+
+  it('does not indent pinned conversations in assistant groups', () => {
+    const { getByText } = renderTopicList()
+    const row = getByText('Beta pinned').closest('[data-testid="topic-list-row"]')
+
+    expect(row).not.toHaveClass('pl-5!')
+  })
+
   it('keeps the leading slot when assistant icons are hidden', () => {
     MockUsePreferenceUtils.setPreferenceValue('assistant.icon_type' as never, 'none')
     const { getByText } = renderTopicList()

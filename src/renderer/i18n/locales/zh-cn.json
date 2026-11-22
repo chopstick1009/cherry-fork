@@ -6598,7 +6598,7 @@
   "webview.annotation.followup_placeholder": "你决定再度追问",
   "webview.annotation.followup_prompt": "可是，为什么？",
   "webview.annotation.thought_placeholder": "写下你的回响",
-  "webview.annotation.title": "批注",
+  "webview.annotation.title": "笔记",
   "webview.annotation.empty": "还没有批注",
   "webview.annotation.import_followups": "导入最新回复的 {{count}} 条追问",
   "webview.annotation.placeholder": "描述需要修改的内容或你注意到的问题…",

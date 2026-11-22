@@ -416,15 +416,14 @@ const AgentChat = ({
     runtimeUiMessages,
     sessionTopicId
   ])
-  const rightPaneTools =
-    !centerSurface && (sessionSnapshot || resourcePane) ? (
-      <>
-        {resourcePaneCount && <ResourcePaneCountButton {...resourcePaneCount} />}
-        <AgentRightPane.Shortcuts
-          browserEnabled={!!activeAgent && !activeAgent.disabledTools?.includes(BROWSER_TOOL_GROUP)}
-        />
-      </>
-    ) : undefined
+  const rightPaneTools = !centerSurface ? (
+    <>
+      {resourcePaneCount && <ResourcePaneCountButton {...resourcePaneCount} />}
+      <AgentRightPane.Shortcuts
+        browserEnabled={!!activeAgent && !activeAgent.disabledTools?.includes(BROWSER_TOOL_GROUP)}
+      />
+    </>
+  ) : undefined
   let topBar: ReactNode
   let center: ReactNode
   let sidePanel: ReactNode
@@ -561,7 +560,7 @@ const AgentChat = ({
     partsByMessageId: sessionSnapshot ? runtime.partsByMessageId : EMPTY_PARTS,
     resourcePane,
     resourcePaneRevealRequest,
-    rightPanelDefaultOpen: sessionPaneOpen,
+    rightPanelDefaultOpen: sessionPaneOpen ?? !centerSurface,
     onRightPanelOpenChange: onSessionPaneOpenChange,
     rightPanelUserOpenIntentSeq: sessionPaneUserOpenIntentSeq,
     paneManualToggle,
@@ -765,6 +764,7 @@ function AgentChatLayout({
 }: AgentChatLayoutProps) {
   return (
     <AgentRightPane.Scope
+      defaultPanelId="annotations"
       model={model}
       conversationState={conversationState}
       streamingLayers={streamingLayers}

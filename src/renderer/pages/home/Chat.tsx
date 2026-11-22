@@ -278,8 +278,6 @@ const Chat: FC<Props> = (props) => {
                     assistantContext.assistant?.name ??
                     (assistantContext.isLoading ? t('common.loading') : t('button.select_assistant'))
                   }
-                  assistantEmoji={assistantContext.assistant?.emoji}
-                  assistantAvatarSrc={assistantContext.assistant?.avatarSrc}
                   model={assistantContext.model}
                   modelPending={
                     assistantContext.isLoading || assistantContext.isModelPending || !activeConversationControlsSnapshot

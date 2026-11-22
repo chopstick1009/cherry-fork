@@ -774,8 +774,6 @@ const HomePage: FC = () => {
       revealRequest={topicRevealRequest}>
       <HomeTabRuntime
         title={tabTitle}
-        emoji={visibleAssistant?.emoji}
-        icon={visibleAssistant?.avatarSrc}
         preserveVisuals={preserveTabVisuals}
         activeTopicId={activeTopic?.id}
         activeTopicSource={activeTopicSource}

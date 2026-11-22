@@ -7,6 +7,7 @@ import { loggerService } from '@logger'
 import { AgentContextUsageSummary } from '@renderer/components/chat/agent/AgentContextUsageSummary'
 import { ContextUsageMeter } from '@renderer/components/chat/contextUsage'
 import { useChatLayoutMode } from '@renderer/components/chat/layout/ChatLayoutModeContext'
+import { formatFollowupImport } from '@renderer/components/chat/messages/annotations/annotationFollowups'
 import { useConversationTopBarPortalLayout } from '@renderer/components/chat/shell/ConversationTopBarPortal'
 import ComposerSurface, {
   type ComposerSurfaceActions,
@@ -82,6 +83,7 @@ import { resolveReasoningEffortForModel } from '@renderer/utils/model'
 import { AGENT_RUNTIME_CAPABILITIES } from '@shared/ai/agentRuntimeCapabilities'
 import type { ComposerQueuedMessagePayload } from '@shared/ai/transport'
 import type { AgentEntity } from '@shared/data/types/agent'
+import type { Annotation } from '@shared/data/types/annotation'
 import type { KnowledgeBase } from '@shared/data/types/knowledge'
 import type { CherryMessagePart, CherryUIMessage, FileUIPart } from '@shared/data/types/message'
 import type { Model, ServiceTierSelection } from '@shared/data/types/model'
@@ -892,6 +894,55 @@ const AgentComposerInner = ({
     return EventEmitter.on(EVENT_NAMES.FOCUS_CHAT_COMPOSER, (payload) => {
       const topicId = typeof payload === 'object' && payload ? (payload as { topicId?: string }).topicId : undefined
       if (topicId !== sessionTopicId) return
+      actionsRef.current.focus('end')
+    })
+  }, [actionsRef, layerActive, sessionTopicId])
+
+  useEffect(() => {
+    if (!layerActive) return
+    return EventEmitter.on(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, (payload: unknown) => {
+      if (!payload || typeof payload !== 'object') return
+      const request = payload as { topicId?: unknown; messageSeq?: unknown; turn?: unknown; annotations?: unknown }
+      if (
+        request.topicId !== sessionTopicId ||
+        typeof request.messageSeq !== 'number' ||
+        !Number.isSafeInteger(request.messageSeq) ||
+        typeof request.turn !== 'number' ||
+        !Number.isSafeInteger(request.turn) ||
+        !Array.isArray(request.annotations)
+      )
+        return
+      const annotations = request.annotations.filter(
+        (annotation): annotation is Annotation =>
+          Boolean(annotation) &&
+          typeof annotation === 'object' &&
+          (annotation as { kind?: unknown }).kind === 'followup' &&
+          typeof (annotation as { exact?: unknown }).exact === 'string' &&
+          typeof (annotation as { content?: unknown }).content === 'string'
+      )
+      if (!annotations.length) return
+
+      const currentDraft = actionsRef.current.getDraft()
+      let text = currentDraft.text
+      const tokens = [...currentDraft.tokens]
+      for (const annotation of annotations) {
+        const quote = formatFollowupImport(annotation, { turn: request.turn, messageSeq: request.messageSeq })
+        const separator = text ? (text.endsWith('\n') ? '\n' : '\n\n') : ''
+        const textOffset = text.length + separator.length
+        const index = tokens.length
+        text += `${separator}${quote.promptText}`
+        tokens.push({
+          id: `annotation-followup:${annotation.id}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
+          kind: 'quote',
+          icon: 'messages',
+          label: quote.label,
+          description: quote.description,
+          promptText: quote.promptText,
+          index,
+          textOffset
+        })
+      }
+      actionsRef.current.replaceDraft({ text, tokens })
       actionsRef.current.focus('end')
     })
   }, [actionsRef, layerActive, sessionTopicId])

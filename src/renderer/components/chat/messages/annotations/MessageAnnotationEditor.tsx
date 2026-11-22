@@ -56,11 +56,11 @@ const MessageAnnotationEditor = ({
   onSave
 }: MessageAnnotationEditorProps) => {
   const { t } = useTranslation()
-  const [size, setSize] = useState({ width: 560, height: 420 })
+  const [size, setSize] = useState({ width: 560, height: 560 })
   const bounds = getEditorBounds()
   const width = Math.min(size.width, Math.max(280, bounds.right - bounds.left - 24))
   const height = Math.min(size.height, Math.max(240, bounds.bottom - bounds.top - 24))
-  const [excerptShare, setExcerptShare] = useState(0.42)
+  const [excerptShare, setExcerptShare] = useState(0.5)
   const splitRef = useRef<{ y: number; share: number; height: number } | null>(null)
   const dragRef = useRef<{
     pointerId: number

@@ -108,6 +108,11 @@ describe('message annotations', () => {
     expect(input).toHaveAttribute('placeholder', 'webview.annotation.followup_placeholder')
     const editor = screen.getByRole('dialog', { name: 'webview.annotation.followup' })
     expect(editor).toHaveStyle({ left: `${window.innerWidth / 2}px`, top: `${window.innerHeight / 2}px` })
+    expect(editor).toHaveStyle({ width: '560px', height: '560px' })
+    expect(editor.querySelector('.chat-annotation-editor-quote')).toHaveStyle({ flex: '0.5 1 0%' })
+    expect(editor.querySelector('.chat-annotation-editor-input')).toHaveStyle({ flex: '0.5 1 0%' })
+    expect(screen.queryByRole('button', { name: 'chat.message.quote' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'notes.save' })).not.toBeInTheDocument()
     const dragHandle = editor.querySelector('[data-annotation-editor-drag-handle]')!
     const initialPosition = editor.getAttribute('style')
     fireEvent(dragHandle, new MouseEvent('pointerdown', { bubbles: true, button: 0, clientX: 140, clientY: 130 }))

@@ -5493,6 +5493,57 @@ describe('AgentComposer', () => {
     expect(mocks.surfaceFocus).toHaveBeenCalledTimes(1)
   })
 
+  it('imports follow-up annotations into only the matching session draft', async () => {
+    mocks.getDraft.mockReturnValue({ text: 'Existing draft', tokens: [] })
+    render(
+      <AgentComposer
+        agentId="agent-1"
+        sessionId="session-1"
+        sendMessage={mocks.sendMessage}
+        stop={mocks.stop}
+        isStreaming={false}
+      />
+    )
+
+    const annotation = {
+      id: 'followup-1',
+      kind: 'followup',
+      role: 'assistant',
+      messageId: 'message-1',
+      exact: 'Quoted answer',
+      content: 'Can you explain?',
+      start: 0,
+      end: 13
+    }
+
+    await act(async () => {
+      await EventEmitter.emit(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, {
+        topicId: 'agent-session:other-session',
+        messageSeq: 2,
+        turn: 1,
+        annotations: [annotation]
+      })
+    })
+    expect(mocks.replaceDraft).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await EventEmitter.emit(EVENT_NAMES.IMPORT_MESSAGE_FOLLOWUPS, {
+        topicId: 'agent-session:session-1',
+        messageSeq: 2,
+        turn: 1,
+        annotations: [annotation]
+      })
+    })
+
+    expect(mocks.replaceDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Can you explain?'),
+        tokens: [expect.objectContaining({ kind: 'quote', label: 'Quoted answer' })]
+      })
+    )
+    expect(mocks.surfaceFocus).toHaveBeenCalled()
+  })
+
   it('keeps missing-agent input local while selecting an agent', () => {
     const onAgentChange = vi.fn()
 

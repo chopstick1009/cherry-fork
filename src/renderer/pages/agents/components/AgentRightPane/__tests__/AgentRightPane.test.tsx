@@ -3715,6 +3715,65 @@ describe('AgentRightPane', () => {
     expect(screen.getByTestId('webview-browser')).toHaveAttribute('data-url', 'https://example.com/browsed')
   })
 
+  it('matches the chat annotations sidebar icon and close behavior', async () => {
+    const user = userEvent.setup()
+    render(
+      <TestAgentRightPane sessionId="session-a" messages={[]} partsByMessageId={{}}>
+        <AgentRightPane.Shortcuts />
+        <AgentRightPane.Viewport />
+      </TestAgentRightPane>
+    )
+
+    const annotationShortcut = screen.getByRole('button', { name: 'webview.annotation.title' })
+    expect(annotationShortcut.querySelector('svg.lucide-notebook')).toBeInTheDocument()
+    expect(annotationShortcut.querySelector('svg.lucide-notebook-pen')).not.toBeInTheDocument()
+
+    await user.click(annotationShortcut)
+
+    expect(screen.getByText('webview.annotation.empty_description')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /webview.annotation.import_followups/ })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'common.close_sidebar' }))
+
+    expect(screen.getByTestId('right-pane')).toHaveAttribute('data-open', 'false')
+  })
+
+  it('opens the annotations panel by default and places its shortcut after browser and details', () => {
+    render(
+      <TestAgentRightPane
+        defaultOpen
+        defaultPanelId="annotations"
+        sessionId="session-a"
+        messages={[]}
+        partsByMessageId={{}}>
+        <AgentRightPane.Shortcuts />
+        <ActivePanelProbe />
+        <AgentRightPane.Viewport />
+      </TestAgentRightPane>
+    )
+
+    expect(screen.getByTestId('active-panel')).toHaveTextContent('annotations')
+    const browser = screen.getByRole('button', { name: 'agent.right_pane.tabs.browser' })
+    const details = screen.getByRole('button', { name: 'agent.right_pane.tabs.details' })
+    const notes = screen.getByRole('button', { name: 'webview.annotation.title' })
+    expect(browser.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(details.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('keeps the annotations shortcut available before a session exists', () => {
+    render(
+      <TestAgentRightPane defaultOpen defaultPanelId="annotations" messages={[]} partsByMessageId={{}}>
+        <AgentRightPane.Shortcuts />
+        <ActivePanelProbe />
+        <AgentRightPane.Viewport />
+      </TestAgentRightPane>
+    )
+
+    expect(screen.getByRole('button', { name: 'webview.annotation.title' })).toBeVisible()
+    expect(screen.getByTestId('active-panel')).toHaveTextContent('annotations')
+    expect(screen.getByText('webview.annotation.empty_description')).toBeVisible()
+  })
+
   it('preserves the selected files pane while auto-open is off', async () => {
     MockUsePreferenceUtils.mockPreferenceReturn('app.browser.auto_open_panel', false)
     const user = userEvent.setup()

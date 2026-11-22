@@ -52,10 +52,12 @@ export function resolveUserDataLocation(): void {
   if (!app.isPackaged) {
     const devPath = resolveDevUserDataPath()
     if (DEV_PROFILE_ROOT) {
-      const tempPath = path.join(DEV_PROFILE_ROOT, 'home', 'temp')
       fs.mkdirSync(devPath, { recursive: true })
+      const tempPath = path.join(DEV_PROFILE_ROOT, 'home', 'temp')
       fs.mkdirSync(tempPath, { recursive: true })
       app.setPath('temp', tempPath)
+    } else {
+      fs.mkdirSync(devPath, { recursive: true })
     }
     app.setPath('userData', devPath)
     logger.info(DEV_PROFILE_ROOT ? 'userData set from dev profile root' : 'userData set with dev suffix', { devPath })

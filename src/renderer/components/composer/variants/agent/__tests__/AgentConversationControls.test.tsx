@@ -13,10 +13,14 @@ vi.mock('@cherrystudio/ui', async (importOriginal) => importOriginal<typeof Cher
 
 const workspace = { id: 'workspace-1', type: 'user', name: 'My workspace', path: '/projects/my-workspace' } as const
 
-function renderControls(workspace: AgentConversationControlsProps['workspace']) {
+function renderControls(
+  workspace: AgentConversationControlsProps['workspace'],
+  agent?: AgentConversationControlsProps['agent']
+) {
   return render(
     <SWRConfig value={{ provider: () => new Map() }}>
       <AgentConversationControls
+        agent={agent}
         workspace={workspace}
         workspaceId={workspace?.id}
         selectAgentLabel="Select agent"
@@ -77,5 +81,17 @@ describe('locked conversation workspace', () => {
     expect(noProject.querySelector('svg.lucide-folder')).not.toBeInTheDocument()
     expect(screen.queryByTestId('clear-workspace-button')).not.toBeInTheDocument()
     expect(window.api.ipcApi.request).not.toHaveBeenCalled()
+  })
+
+  it('shows the selected agent name without repeating its avatar in the composer control', () => {
+    renderControls(workspace, {
+      id: 'agent-1',
+      name: 'Research Agent',
+      configuration: { avatar: '🔬' }
+    } as AgentConversationControlsProps['agent'])
+
+    const agentButton = screen.getByRole('button', { name: 'Research Agent' })
+    expect(agentButton).toBeVisible()
+    expect(agentButton.querySelector('img')).not.toBeInTheDocument()
   })
 })

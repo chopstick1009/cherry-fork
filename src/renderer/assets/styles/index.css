@@ -266,10 +266,6 @@
     cursor: pointer;
   }
 
-  .chat-annotation-entry > button[aria-current='true'] {
-    background: color-mix(in srgb, var(--accent) 35%, transparent);
-  }
-
   .chat-annotation-quote {
     max-height: 130px;
     margin: 0;

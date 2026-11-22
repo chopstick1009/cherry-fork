@@ -99,6 +99,7 @@ function AgentControl({
         <AgentLabel
           agent={agent}
           avatarSize={20}
+          hideIcon
           classNames={{
             name: cn('max-w-40 text-xs', iconOnly && COMPOSER_ICON_ONLY_LABEL_CLASS),
             container: 'gap-1.5'

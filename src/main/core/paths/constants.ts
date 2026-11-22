@@ -73,12 +73,21 @@ function resolveDevUserDataSuffix(): string {
 }
 
 /**
- * Dev-instance userData directory (`…/CherryStudio` → `…/CherryStudioDev`).
+ * Dev-instance userData directory (`…/CherryStudio` → `…/CherryStudioDev`),
+ * overridable via CS_DEV_USER_DATA_PATH.
  * Applied by `core/preboot/userDataLocation.ts` and — on Windows and Linux,
  * where logs live inside userData — by the logs diversion below, so both
  * derive from one definition.
  */
 export function resolveDevUserDataPath(): string {
+  const configured = process.env.CS_DEV_USER_DATA_PATH?.trim()
+  if (configured) {
+    const normalized = path.normalize(configured)
+    if (!path.isAbsolute(normalized) || normalized === path.parse(normalized).root) {
+      throw new Error('CS_DEV_USER_DATA_PATH must be an absolute directory other than the filesystem root.')
+    }
+    return normalized
+  }
   if (DEV_PROFILE_ROOT) return path.join(DEV_PROFILE_ROOT, 'userData')
   return app.getPath('userData') + resolveDevUserDataSuffix()
 }
@@ -89,12 +98,15 @@ export function resolveDevUserDataPath(): string {
 // the not-yet-suffixed userData — so without this a dev run would interleave
 // its logs with a packaged install's.
 if (!app.isPackaged) {
+  const explicitUserDataPath = process.env.CS_DEV_USER_DATA_PATH?.trim()
   app.setAppLogsPath(
-    DEV_PROFILE_ROOT
-      ? path.join(DEV_PROFILE_ROOT, 'logs')
-      : process.platform === 'darwin'
-        ? app.getPath('logs') + resolveDevUserDataSuffix()
-        : path.join(resolveDevUserDataPath(), 'logs')
+    explicitUserDataPath
+      ? path.join(resolveDevUserDataPath(), 'logs')
+      : DEV_PROFILE_ROOT
+        ? path.join(DEV_PROFILE_ROOT, 'logs')
+        : process.platform === 'darwin'
+          ? app.getPath('logs') + resolveDevUserDataSuffix()
+          : path.join(resolveDevUserDataPath(), 'logs')
   )
 }
 

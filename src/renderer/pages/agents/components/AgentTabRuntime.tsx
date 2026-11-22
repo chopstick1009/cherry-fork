@@ -7,9 +7,6 @@ import { useIsActiveTab, useTabSelfVisuals } from '@renderer/hooks/tab'
 
 type Props = {
   title: string
-  emoji?: string | null
-  /** Image avatar URL; takes precedence over `emoji`. */
-  icon?: string
   preserveVisuals: boolean
   activeSessionId?: string | null
   activeSessionSource: AgentSessionSource
@@ -18,8 +15,6 @@ type Props = {
 
 export function AgentTabRuntime({
   title,
-  emoji,
-  icon,
   preserveVisuals,
   activeSessionId,
   activeSessionSource,
@@ -29,10 +24,9 @@ export function AgentTabRuntime({
 
   useTabSelfVisuals({
     title,
-    emoji,
-    icon,
     routePrefix: '/app/agents',
-    preserveVisuals
+    preserveVisuals,
+    clearIconWhenPreserving: true
   })
 
   useCommandHandler('app.sidebar.toggle', onToggleSidebar, { enabled: isActiveTab })

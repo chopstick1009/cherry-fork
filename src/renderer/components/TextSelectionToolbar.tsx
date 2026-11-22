@@ -180,19 +180,23 @@ export function TextSelectionToolbar({
               <Copy aria-hidden="true" />
               {t('common.copy')}
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => runAction(onQuote)}>
-              <Quote aria-hidden="true" />
-              {t('chat.message.quote')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={isSavingNote}
-              onClick={() => runAction(onSaveToNotes)}>
-              <NotebookPen aria-hidden="true" />
-              {t('notes.save')}
-            </Button>
+            {!annotations && (
+              <>
+                <Button type="button" variant="ghost" size="sm" onClick={() => runAction(onQuote)}>
+                  <Quote aria-hidden="true" />
+                  {t('chat.message.quote')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isSavingNote}
+                  onClick={() => runAction(onSaveToNotes)}>
+                  <NotebookPen aria-hidden="true" />
+                  {t('notes.save')}
+                </Button>
+              </>
+            )}
             {annotations && canAnnotateSelection && (
               <>
                 <Button

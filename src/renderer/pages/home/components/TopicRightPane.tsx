@@ -192,7 +192,7 @@ function TopicAnnotationRightPanel({ scope }: RightPanelComponentProps<TopicRigh
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex min-h-12 shrink-0 items-center justify-between gap-2 border-b px-4 py-2">
         <span className="min-w-0 truncate text-sm font-semibold text-muted-foreground">
-          {t('webview.annotation.current_session')} · {t('webview.annotation.count', { count: annotations.length })}
+          {t('webview.annotation.current_session')} · {annotations.length} 条
         </span>
         <NormalTooltip content={importLabel} side="bottom">
           <button
