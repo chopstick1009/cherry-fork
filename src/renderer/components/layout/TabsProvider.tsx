@@ -145,9 +145,10 @@ export function repairPinnedTabs(raw: unknown, normalTabs: readonly Tab[]): Pinn
 
 function withLocalizedRouteTitle(tab: Tab): Tab {
   if (tab.type !== 'route') return tab
-  // Chat / agent tabs are page-titled — never auto-localize, or the route title clobbers them.
+  // Chat / agent tabs are named by their page, so do not show route labels while names load.
   if (isPageTitledRoute(tab.url)) {
-    return tab.title ? tab : { ...tab, title: getDefaultRouteTitle(tab.url) }
+    const defaultTitle = getDefaultRouteTitle(tab.url)
+    return tab.title === defaultTitle ? { ...tab, title: '' } : tab
   }
   // Only auto-localize titles for top-level and settings routes. Parameterized
   // routes (e.g. /app/mini-app/<id>) preserve the title supplied at openTab
@@ -592,7 +593,7 @@ export function TabsProvider({
         id: id || uuid(),
         type,
         url,
-        title: title || getDefaultRouteTitle(url),
+        title: title ?? (type === 'route' && isPageTitledRoute(url) ? '' : getDefaultRouteTitle(url)),
         icon,
         metadata,
         isPinned,

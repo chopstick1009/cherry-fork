@@ -41,7 +41,6 @@ import { toast } from '@renderer/services/toast'
 import type { AppRouter } from '@renderer/types/router'
 import { buildAgentFileWorkspaceKey, buildAgentSessionTopicId } from '@renderer/utils/agentSession'
 import { formatErrorMessage, formatErrorMessageWithPrefix } from '@renderer/utils/error'
-import { getDefaultRouteTitle } from '@renderer/utils/routeTitle'
 import { cn } from '@renderer/utils/style'
 import { isDataApiNotFoundError } from '@shared/data/api/errors'
 import type { ConcreteApiPaths } from '@shared/data/api/paths'
@@ -406,15 +405,20 @@ const AgentPage = () => {
   })
   const visibleAgent = conversationBootstrap.resources.agent
   const routeAgent = routeAgentId ? agents.find((agent) => agent.id === routeAgentId) : undefined
-  const tabAgent = visibleAgent ?? visibleAgentFromList ?? routeAgent
+  const tabSession = targetSessionId
+    ? visibleSession?.id === targetSessionId
+      ? visibleSession
+      : undefined
+    : visibleSession
+  const tabAgent = tabSession ? (visibleAgent ?? visibleAgentFromList ?? routeAgent) : routeAgent
   const preserveTabVisuals =
-    (!!targetSessionId && visibleSession?.id !== targetSessionId) ||
+    (!!targetSessionId && !tabSession && !tabAgent) ||
     (!!routeAgentId && !routeAgent && isAgentsLoading) ||
-    (!!visibleSession?.agentId &&
+    (!!tabSession?.agentId &&
       !visibleAgent &&
       !visibleAgentFromList &&
       conversationBootstrap.resources.agentLoading &&
-      !visibleSession.name?.trim())
+      !tabSession.name?.trim())
 
   useEffect(() => {
     if (locateMessageId || locateToEnd) closeSurface()
@@ -1151,7 +1155,7 @@ const AgentPage = () => {
   return (
     <>
       <AgentTabRuntime
-        title={visibleSession?.name?.trim() || tabAgent?.name?.trim() || getDefaultRouteTitle('/app/agents')}
+        title={tabSession?.name?.trim() || tabAgent?.name?.trim() || ''}
         preserveVisuals={preserveTabVisuals}
         activeSessionId={activeSession?.id}
         activeSessionSource={activeSessionSource}

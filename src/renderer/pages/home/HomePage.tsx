@@ -42,7 +42,6 @@ import type { AppRouter } from '@renderer/types/router'
 import type { Topic } from '@renderer/types/topic'
 import { getTopicAssistantDisplayGroupId } from '@renderer/utils/chat/topicsHelpers'
 import { formatErrorMessageWithPrefix } from '@renderer/utils/error'
-import { getDefaultRouteTitle } from '@renderer/utils/routeTitle'
 import { cn } from '@renderer/utils/style'
 import { isDataApiNotFoundError } from '@shared/data/api/errors'
 
@@ -322,8 +321,14 @@ const HomePage: FC = () => {
     visibleConversationId: visibleTopic?.id
   })
   // Label this tab with its assistant emoji + topic name so multiple chat tabs are distinguishable.
-  const preserveTabVisuals = !!targetTopicId && visibleTopic?.id !== targetTopicId
-  const tabTitle = visibleTopic?.name?.trim() || visibleAssistant?.name?.trim() || getDefaultRouteTitle('/app/chat')
+  const tabTopic = !targetTopicId || visibleTopic?.id === targetTopicId ? visibleTopic : undefined
+  const tabAssistant =
+    (tabTopic?.assistantId && assistants.find((assistant) => assistant.id === tabTopic.assistantId)) ||
+    (routeAssistantId || lastUsedAssistantId
+      ? assistants.find((assistant) => assistant.id === (routeAssistantId ?? lastUsedAssistantId))
+      : undefined)
+  const preserveTabVisuals = !!targetTopicId && !tabTopic && !tabAssistant
+  const tabTitle = tabTopic?.name?.trim() || tabAssistant?.name?.trim() || ''
 
   useEffect(() => {
     if (locateMessageId || locateToEnd) closeSurface()

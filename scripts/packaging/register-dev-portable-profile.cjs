@@ -3,7 +3,9 @@ const os = require('node:os')
 const path = require('node:path')
 
 const projectRoot = path.resolve(__dirname, '../..')
-const outputDirectory = path.join(projectRoot, '.context/cherry-electron-dev/package-build')
+const outputDirectory = path.resolve(
+  process.env.CHERRY_DEV_PORTABLE_OUTPUT_DIR || path.join(projectRoot, '.context/cherry-electron-dev/package-build')
+)
 const userDataDirectory = path.join(projectRoot, '.context/cherry-electron-dev/package/data')
 const databasePath = path.join(userDataDirectory, 'Data/cherrystudio.sqlite')
 const bootConfigPath = path.join(os.homedir(), '.cherrystudio/boot-config.json')

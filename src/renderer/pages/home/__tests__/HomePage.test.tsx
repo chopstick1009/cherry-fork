@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { cacheService } from '@data/CacheService'
 import { WindowFrameProvider } from '@renderer/components/chat/shell/WindowFrameContext'
 import { useCommandHandler } from '@renderer/hooks/command'
+import { useTabSelfVisuals } from '@renderer/hooks/tab'
 import { DataApiErrorFactory } from '@shared/data/api/errors'
 
 const initialTopic: Topic = {
@@ -787,6 +788,20 @@ describe('HomePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle selected assistant pane' }))
 
     expect(homeMocks.cacheSetPersist).toHaveBeenCalledWith('ui.chat.right_pane_open_override', true)
+  })
+
+  it('uses the remembered assistant name while the selected topic is still loading', () => {
+    homeMocks.routeSearch = { topicId: 'topic-restoring' }
+    homeMocks.persistCacheValues.set('ui.chat.last_used_assistant_id', 'assistant-1')
+    homeMocks.assistants = [{ id: 'assistant-1', name: 'Assistant One' }]
+    homeMocks.forceActiveTopicUndefined = true
+    homeMocks.activeTopicLoading = true
+
+    render(<HomePage />)
+
+    expect(vi.mocked(useTabSelfVisuals).mock.calls.at(-1)?.[0]).toEqual(
+      expect.objectContaining({ title: 'Assistant One', preserveVisuals: false })
+    )
   })
 
   it('does not record a user open intent when the rail header closes the classic topic pane', () => {

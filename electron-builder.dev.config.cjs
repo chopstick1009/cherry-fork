@@ -5,7 +5,7 @@ module.exports = {
   appId: 'com.kangfenmao.CherryStudioDev',
   productName: 'Cherry Studio Dev',
   directories: {
-    output: path.resolve(__dirname, '.context/cherry-electron-dev/package-build')
+    output: path.resolve(process.env.CHERRY_DEV_PORTABLE_OUTPUT_DIR || '.context/cherry-electron-dev/package-build')
   },
   win: {
     icon: 'D:/FireFox/cherry-studio.ico'

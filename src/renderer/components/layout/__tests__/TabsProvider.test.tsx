@@ -372,6 +372,27 @@ function ForceNewSameUrlOpener() {
   return <TabSnapshot />
 }
 
+function PageTitleRouteOpener() {
+  const { openTab, tabs } = useTabsContext()
+
+  return (
+    <>
+      <button type="button" onClick={() => openTab('/app/chat', { id: 'new-chat', forceNew: true })}>
+        Open chat
+      </button>
+      <button type="button" onClick={() => openTab('/app/agents', { id: 'new-agent', forceNew: true })}>
+        Open agent
+      </button>
+      <div data-testid="page-titles">
+        {tabs
+          .filter((tab) => tab.id === 'new-chat' || tab.id === 'new-agent')
+          .map((tab) => `${tab.id}:${tab.title}`)
+          .join(',')}
+      </div>
+    </>
+  )
+}
+
 // Materializes a pinned tab from "init" the way a detached sub-window re-creates its tab.
 function PinnedTabMaterializer() {
   const { tabs, openTab } = useTabsContext()
@@ -879,6 +900,19 @@ describe('TabsProvider', () => {
 })
 
 describe('TabsProvider session restore', () => {
+  it('keeps new chat and agent tab titles empty until their pages provide a name', async () => {
+    render(
+      <TabsProvider initialDefaultTab={HOME_TAB} includePinnedTabs={false}>
+        <PageTitleRouteOpener />
+      </TabsProvider>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open chat' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open agent' }))
+
+    await waitFor(() => expect(screen.getByTestId('page-titles')).toHaveTextContent('new-chat:,new-agent:'))
+  })
+
   it('drops transient mini-app tabs whose in-memory descriptor disappears on restart', async () => {
     const codeTab: Tab = {
       id: 'code',

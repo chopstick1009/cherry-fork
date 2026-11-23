@@ -210,7 +210,7 @@ const AppShellContent = () => {
     const isPageTitled = isPageTitledRoute(url)
     const tab = tabs.find((candidate) => candidate.id === tabId)
     const patch = isPageTitled
-      ? { url, lastAccessTime: Date.now() }
+      ? { url, title: '', lastAccessTime: Date.now() }
       : {
           url,
           title: getDefaultRouteTitle(url),

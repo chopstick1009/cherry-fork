@@ -47,6 +47,7 @@ How to approach any coding task in this repo.
 
 Project-specific tools, paths, and conventions.
 
+- **Read and maintain workspace notes**: at the start of every task, read [.codex/workspace-notes.md](.codex/workspace-notes.md) before investigating or editing. Record every pitfall, including recurrences of known issues, and add reusable architecture patterns there; never omit an entry because the issue was already documented or resolved.
 - **Keep it clear**: Write code that is easy to read, maintain, and explain.
 - **Read local READMEs first**: Before editing code in a directory, check for a `README.md` in that directory (and its parents) and read it — these files capture local conventions, invariants, and entry points that aren't obvious from the code alone.
 - **Fix upstream, don't hack downstream**: When a new feature hits an existing module's limitation, flag the upstream improvement for the user's decision before proposing a downstream workaround.
