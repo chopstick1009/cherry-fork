@@ -8,7 +8,7 @@
 
 - **现象**：提交/推送前检查工具时，PowerShell 提示 `gpg` 和 GitHub CLI `gh` 不是可识别的命令。
 - **已确认影响**：不能直接使用 GPG 完成仓库要求的签名提交；也不能通过 `gh auth status` 检查 GitHub CLI 登录状态。
-- **后续处理**：先检查已有 SSH 密钥和 Git 的 SSH 远端认证/签名能力。验证替代方案前，不要把“无签名提交”当作正常绕行，也不要声称 `gh` 登录状态已验证。
+- **已验证替代**：使用现有 SSH 私钥修复 ACL 后，`ssh -T git@github.com` 认证成功。Git 可用 `-c gpg.format=ssh` 和 `-c user.signingkey=<SSH 私钥>` 创建 SSH 签名提交，使用临时 `gpg.ssh.allowedSignersFile` 验证签名，并通过明确的 `git@github.com:<owner>/<repo>.git` 地址推送。`gh` 仍不可用，因此不要声称 `gh auth status` 已验证。
 
 ### 2026-11-23：Windows SSH 私钥 ACL 过宽导致 GitHub 拒绝密钥
 
